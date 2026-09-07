@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Download, Radio, RotateCw, Search, Settings2 } from 'lucide-react'
+import { ArrowRight, ChevronDown, Download, Radio, RotateCw, Search, Settings2 } from 'lucide-react'
 import { PageHeader } from '@/components/console/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { ExerciseLegend, MonthlyExerciseChart } from '@/components/exercises/exercise-charts'
-import { ExerciseEmpty, ExerciseError, ExerciseLoading, ExerciseSegments } from '@/components/exercises/exercise-controls'
+import { ExerciseEmpty, ExerciseError, ExerciseLoading } from '@/components/exercises/exercise-controls'
 import { MONTH_ORDER, academicYear, formatValue, hasRecord, mean, monthlySummary } from '@/components/exercises/exercise-data'
 import { DashboardData, classSummary, licenseStatus, loadDashboard } from './dashboard-data'
 
@@ -91,7 +91,12 @@ export default function SchoolDashboard() {
   return <div className="min-w-0 bg-background text-foreground">
     <PageHeader className="[&_h1]:!text-[19px] [&_h1]:!leading-[1.2] [&_p]:text-[10px] [&_p]:leading-[1.3]" eyebrow="대시보드" title={`${year} 학년도 요약`} actions={<>
       <div className="relative w-full sm:w-[280px]"><Search aria-hidden className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={query} onChange={event => setQuery(event.target.value)} placeholder="학생 이름 · 번호 · 학급 검색" aria-label="학생 이름, 번호 또는 학급 검색" className="h-9 bg-background pl-9 text-[13px]" /></div>
-      <ExerciseSegments label="대시보드 학년도" value={String(year)} onChange={value => { setYear(Number(value)); setExportError(null) }} options={[currentYear, currentYear - 1].map(value => ({ value: String(value), label: String(value) }))} />
+      <div className="relative flex shrink-0 items-center">
+        <select aria-label="대시보드 학년도" value={year} onChange={event => { setYear(Number(event.target.value)); setExportError(null) }} className="h-9 w-[132px] appearance-none border border-[#201e1d]/40 bg-[#f3f2f2] pl-3 pr-[34px] text-[13px] font-semibold">
+          {[currentYear, currentYear - 1, currentYear - 2].map(value => <option key={value} value={value}>{value} 학년도</option>)}
+        </select>
+        <ChevronDown aria-hidden className="pointer-events-none absolute right-[11px] h-[15px] w-[15px] opacity-55" />
+      </div>
       <Button variant="outline" size="icon" disabled={loading} onClick={retry} aria-label="대시보드 새로고침" title="대시보드 새로고침"><RotateCw className="h-4 w-4" /></Button>
     </>} />
     <div className="space-y-5 px-4 py-6 sm:px-7">
@@ -100,10 +105,12 @@ export default function SchoolDashboard() {
           {kpis.map(kpi => <div key={kpi.label} className="flex min-w-0 flex-col gap-2 bg-white px-5 py-[18px]"><dt className="text-xs font-bold text-muted-foreground">{kpi.label}</dt><dd className="break-words text-[34px] leading-none font-extrabold tabular-nums">{formatValue(kpi.value, kpi.digits)}<span className="ml-1 text-[15px] font-semibold text-muted-foreground">{kpi.unit}</span></dd><p className="text-xs text-muted-foreground">{kpi.caption}</p></div>)}
         </dl>
         {!recordStudents && <ExerciseEmpty noStudents={!studentCount} />}
-        <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <section className="min-w-0 border border-border bg-white p-5" aria-labelledby="dashboard-monthly-title">
+        <div className="grid min-w-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <section className="flex min-w-0 flex-col border border-border bg-white p-5" aria-labelledby="dashboard-monthly-title">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h2 id="dashboard-monthly-title" className="text-[15px] leading-[1.2] font-extrabold">월별 운동시간</h2><p className="mt-1 text-xs leading-[1.4] text-foreground/55">학년도 기준 3월 → 익년 2월 · 단위 분</p></div><ExerciseLegend /></div>
-            <MonthlyExerciseChart rows={rows} year={year} metric="minutes" height={228} dashboard />
+            <div className="relative min-h-[215px] min-w-0 flex-1">
+              <div className="absolute inset-0"><MonthlyExerciseChart rows={rows} year={year} metric="minutes" height="100%" dashboard /></div>
+            </div>
           </section>
           <section className="flex min-h-[392px] min-w-0 flex-col border border-border bg-white" aria-labelledby="dashboard-device-title">
             <div className="flex h-14 items-center justify-between border-b-2 border-border px-[18px]"><h2 id="dashboard-device-title" className="text-[15px] font-extrabold">디바이스 · 콘텐츠</h2><Button asChild variant="ghost" size="icon-sm"><Link href="/school/settings" aria-label="디바이스 설정" title="디바이스 설정"><Settings2 className="h-4 w-4" /></Link></Button></div>

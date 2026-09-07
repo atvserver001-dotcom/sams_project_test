@@ -127,7 +127,7 @@ export default function LiveHeartCare() {
   }
   if (!session) return <div className={`${styles.root} ${styles.liveEmpty}`}>
     <Activity size={30} /><h1>Heart Care</h1><p>{error ?? (loading ? '세션을 불러오는 중...' : '진행 중인 측정이 없습니다.')}</p>
-    <Button asChild><Link href="/school/heart-rate"><ArrowLeft size={15} />심박기록관리</Link></Button>
+    <Button asChild><Link href="/school/heart-rate"><ArrowLeft size={15} />Heart Care</Link></Button>
   </div>
 
   return <div className={`${styles.root} ${styles.live}`} data-heart-care-live>

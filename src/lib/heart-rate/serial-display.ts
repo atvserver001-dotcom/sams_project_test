@@ -1,7 +1,33 @@
 import type { HeartRateMeasurementView } from '../heartRateCollector'
-import type { HeartRateSessionPayload } from '../heartRateSession'
+import { HEART_RATE_SESSION_MAX_PARTICIPANTS, type HeartRateSessionPayload } from '../heartRateSession'
 import { currentHeartRateForSignal, getHeartRateSignalState, type GatewayHeartRateEvent, type HeartRateDeviceMapping } from '../heartRateSerial'
-import { advanceSession, createSession, ingestSample, type Session, type SessionContext } from './session'
+import { advanceSession, createSession, ingestSample, type LiveStudent, type Session, type SessionContext } from './session'
+
+export type SerialDisplaySlot = { no: number; live: LiveStudent | null }
+export type SerialDisplaySlotState = 'unregistered' | 'unassigned' | 'waiting' | 'no-signal' | 'live'
+
+export function createSerialDisplaySlots(students: readonly LiveStudent[]): SerialDisplaySlot[] {
+  const studentByNumber = new Map(students.map((student) => [student.participant.no, student]))
+  return Array.from({ length: HEART_RATE_SESSION_MAX_PARTICIPANTS }, (_, index) => ({
+    no: index + 1,
+    live: studentByNumber.get(index + 1) ?? null,
+  }))
+}
+
+export function getSerialDisplaySlotState(live: LiveStudent | null): SerialDisplaySlotState {
+  if (live === null) return 'unregistered'
+  if (!live.participant.device_id) return 'unassigned'
+  if (live.cur !== null) return 'live'
+  return live.lastSeenAt === null ? 'waiting' : 'no-signal'
+}
+
+export function serialDisplaySlotStateLabel(state: SerialDisplaySlotState) {
+  if (state === 'unregistered') return '학생 미등록'
+  if (state === 'unassigned') return '기기 미배정'
+  if (state === 'waiting') return '수신 대기'
+  if (state === 'no-signal') return '신호 없음'
+  return '정상 수신'
+}
 
 // This cache owns waveform pixels only. Collector and server own saved measurements.
 export function createSerialDisplay(payload: HeartRateSessionPayload, mappings: HeartRateDeviceMapping[], context: Omit<SessionContext, 'students'>, startedAt: number) {

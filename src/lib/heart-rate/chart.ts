@@ -1,10 +1,33 @@
-import type { Sample } from './session'
+import { SIGNAL_TIMEOUT_MS, type Sample } from './session'
+
+export type DisplaySample = Sample & { carried?: true }
+export const DISPLAY_CARRY_TIMEOUT_SECONDS = SIGNAL_TIMEOUT_MS / 1000
 
 export const Y_MIN = 60
 export const Y_MAX = 200
 export const chartY = (bpm: number, height: number) => (Y_MAX - Math.max(Y_MIN, Math.min(Y_MAX, bpm))) / (Y_MAX - Y_MIN) * height
 
-export function movingAverage(samples: Sample[], seconds = 5): Sample[] {
+export function forwardFillShortDisplayGaps(
+  samples: readonly Sample[],
+  timeoutSeconds = DISPLAY_CARRY_TIMEOUT_SECONDS,
+): DisplaySample[] {
+  let lastBpm: number | null = null
+  let lastValidSec: number | null = null
+  return samples.map((sample) => {
+    if (sample.bpm !== null) {
+      lastBpm = sample.bpm
+      lastValidSec = sample.sec
+      return { ...sample }
+    }
+    const ageSeconds = lastValidSec === null ? Number.POSITIVE_INFINITY : sample.sec - lastValidSec
+    if (lastBpm !== null && ageSeconds > 0 && ageSeconds < timeoutSeconds) {
+      return { ...sample, bpm: lastBpm, min: null, max: null, carried: true }
+    }
+    return { ...sample }
+  })
+}
+
+export function movingAverage(samples: DisplaySample[], seconds = 5): DisplaySample[] {
   const window: number[] = []
   return samples.map(sample => {
     if (sample.bpm === null) { window.length = 0; return sample }
@@ -15,24 +38,29 @@ export function movingAverage(samples: Sample[], seconds = 5): Sample[] {
 }
 
 // A bin containing any gap stays a gap, including after coarse tile decimation.
-export function tileSamples(samples: Sample[], limit = 45): Sample[] {
+export function tileSamples(samples: DisplaySample[], limit = 45): DisplaySample[] {
   const step = Math.max(1, Math.ceil(samples.length / limit))
-  const output: Sample[] = []
+  const output: DisplaySample[] = []
   for (let start = 0; start < samples.length; start += step) {
     const bin = samples.slice(start, start + step)
     const values = bin.map(point => point.bpm)
-    output.push({ ...bin[bin.length - 1], bpm: values.some(value => value === null) ? null
-      : (values as number[]).reduce((sum, value) => sum + value, 0) / values.length })
+    const hasGap = values.some(value => value === null)
+    const point: DisplaySample = { ...bin[bin.length - 1], bpm: hasGap ? null
+      : (values as number[]).reduce((sum, value) => sum + value, 0) / values.length }
+    if (!hasGap && bin.some(value => value.carried)) point.carried = true
+    else delete point.carried
+    output.push(point)
   }
   return output
 }
 
-export function chartGeometry(samples: Sample[], width: number, height: number, firstSec?: number, lastSec?: number) {
+export function chartGeometry(samples: DisplaySample[], width: number, height: number, firstSec?: number, lastSec?: number) {
   const start = firstSec ?? samples[0]?.sec ?? 0
   const end = lastSec ?? samples[samples.length - 1]?.sec ?? start + 1
   const x = (sec: number) => (sec - start) / Math.max(1, end - start) * width
   const segments: { x: number; y: number; sec: number; bpm: number }[][] = []
   const gaps: { x: number; width: number }[] = []
+  const carried: { x: number; width: number }[] = []
   let segment: typeof segments[number] = []
   for (const sample of samples) {
     if (sample.bpm === null) {
@@ -49,9 +77,17 @@ export function chartGeometry(samples: Sample[], width: number, height: number, 
     const right = index + 1 < samples.length ? x(samples[index + 1].sec) : width
     gaps.push({ x: left, width: Math.max(1, right - left) })
   }
+  for (let index = 0; index < samples.length; index++) {
+    if (!samples[index].carried) continue
+    const begin = index
+    while (index + 1 < samples.length && samples[index + 1].carried) index++
+    const left = x(samples[begin].sec)
+    const right = index + 1 < samples.length ? x(samples[index + 1].sec) : width
+    carried.push({ x: left, width: Math.max(1, right - left) })
+  }
   const area = segments.map(points => `M${points[0].x},${height} ${points.map(p => `L${p.x},${p.y}`).join(' ')} L${points[points.length - 1].x},${height} Z`).join(' ')
   const line = segments.map(points => `M${points.map(p => `${p.x},${p.y}`).join(' L')}`).join(' ')
-  return { segments, gaps, area, line, x }
+  return { segments, gaps, carried, area, line, x }
 }
 
 export function rawExtrema(samples: Sample[]) {

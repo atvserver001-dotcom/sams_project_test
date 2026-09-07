@@ -35,6 +35,7 @@ type Route = { methods: string[]; kind: string; id?: string }
 export function schoolDataRouteFor(path: string): Route | null {
   const routes: Record<string, Route> = {
     '/api/school/info': { methods: ['GET'], kind: 'info' },
+    '/api/school/dashboard/overview': { methods: ['GET'], kind: 'overview' },
     '/api/school/students': { methods: ['GET', 'POST'], kind: 'students' },
     '/api/school/exercises': { methods: ['GET'], kind: 'exercises' },
     '/api/school/paps': { methods: ['GET'], kind: 'paps' },
@@ -181,6 +182,24 @@ export async function handleSchoolDataRequest(request: Request, state: FixtureSt
     }
     switch (route.kind) {
       case 'info': return respond({ school: scope.school })
+      case 'overview': {
+        const year = integer(Number(url.searchParams.get('year')), 'year', 1900, 9998)
+        const roster = state.students.filter(student => student.year === year && student.grade >= 1
+          && student.grade <= (scope.school.school_type === 1 ? 6 : 3) && student.class_no >= 1 && student.class_no <= 10)
+        const classrooms = [...new Set(roster.map(student => `${student.grade}:${student.class_no}`))]
+          .map(key => key.split(':').map(Number)).sort((a, b) => a[0] - b[0] || a[1] - b[1])
+        const classes = classrooms.map(([grade, classNo]) => {
+          const selection = new URL(url)
+          selection.search = new URLSearchParams({ year: String(year), grade: String(grade), class_no: String(classNo), category_type: 'all' }).toString()
+          return { grade, classNo, students: roster.filter(student => student.grade === grade && student.class_no === classNo).sort((a, b) => a.student_no - b.student_no), rows: getRecords(state, selection, 'exercises').rows }
+        })
+        const contents = scope.contents as Array<{ school_content_id: string; name: string; start_date: string | null; end_date: string | null; is_unlimited: boolean }>
+        const devices = scope.devices as Array<{ device_id: string; device_name: string; start_date: string | null; end_date: string | null; limited_period: boolean }>
+        return respond({ school: scope.school, classes, licenses: [
+          ...contents.map(item => ({ key: `content-${item.school_content_id}`, name: item.name, kind: '콘텐츠', start: item.start_date, end: item.end_date, unlimited: item.is_unlimited })),
+          ...devices.map((item, index) => ({ key: `device-${item.device_id}-${index}`, name: item.device_name, kind: '디바이스', start: item.start_date, end: item.end_date, unlimited: !item.limited_period })),
+        ] })
+      }
       case 'contents': return respond({ items: scope.contents })
       case 'references': return respond({ refs: PAPS_GRADE_REFERENCES, preview: { source: 'temp/insert_paps_grade.sql', notice: PAPS_REFERENCE_NOTICE } })
       case 'school-devices': return respond({ items: state.devices })

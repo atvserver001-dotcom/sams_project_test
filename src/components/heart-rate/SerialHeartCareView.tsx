@@ -4,10 +4,11 @@ import Image from 'next/image'
 import { ArrowDown, ArrowLeft, CircleStop, Maximize, Minimize } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { createSerialDisplaySlots, getSerialDisplaySlotState, serialDisplaySlotStateLabel } from '@/lib/heart-rate/serial-display'
 import { isWarning, type Session } from '@/lib/heart-rate/session'
 import { formatDuration, zoneOf } from '@/lib/heart-rate/zones'
 import { HeartRateChart, ZoneLegend } from './HeartRateChart'
-import { StudentFocus, StudentTile } from './StudentHeartRateViews'
+import { EmptyStudentTile, StudentFocus, StudentTile } from './StudentHeartRateViews'
 import styles from './heart-care.module.css'
 const valueText = (value: number | null) => value === null ? '--' : Math.round(value)
 export function SerialHeartCareView({ session, now, state, statusText, error, busy, onStop, onBack }: {
@@ -26,8 +27,10 @@ export function SerialHeartCareView({ session, now, state, statusText, error, bu
  const toggleFullscreen = async () => { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen() }
  const [fullscreenError, setFullscreenError] = useState<string | null>(null)
  const students = session?.students ?? []
+ const slots = session ? createSerialDisplaySlots(students) : []
  const selected = students.find(student => student.participant.no === focusNo)
- const remaining = students.filter(student => student.participant.no !== focusNo).sort((a, b) => sort === 'bpm' ? (b.cur ?? -1) - (a.cur ?? -1) || a.participant.no - b.participant.no : a.participant.no - b.participant.no)
+ const remaining = slots.filter(slot => slot.no !== focusNo).sort((a, b) => sort === 'bpm'
+  ? (b.live?.cur ?? -1) - (a.live?.cur ?? -1) || a.no - b.no : a.no - b.no)
  const elapsed = session ? Math.max(0, ((session.stoppedAt ?? now) - session.startedAt) / 1000) : 0
  const warnings = students.filter(student => isWarning(student, session?.stoppedAt ?? now))
  return <div className={`${styles.root} ${styles.live} max-[760px]:!h-dvh max-[760px]:!overflow-y-auto`} data-heart-care-live>
@@ -45,19 +48,27 @@ export function SerialHeartCareView({ session, now, state, statusText, error, bu
     {warnings.length > 0 && <div className={styles.warningBanner} role="status">최대·주의 구간 2분 초과 · {warnings.map(student => `${student.participant.no}번 ${student.participant.name}`).join(', ')}</div>}
     {selected ? <div className={`${styles.focusLayout} max-[760px]:!block max-[760px]:!flex-none`} key="focus">
       <StudentFocus live={selected} elapsed={elapsed} onClear={() => selectFocus(null)} />
-      <aside className={styles.rail}><div className={styles.railHeader}><h2>나머지 {remaining.length}명</h2>
+      <aside className={styles.rail}><div className={styles.railHeader}><h2>나머지 {remaining.length}개 자리</h2>
         <ToggleGroup type="single" value={sort} onValueChange={value => { if (value) setSort(value) }} aria-label="학생 정렬">
           <ToggleGroupItem value="number" aria-label="번호순">번호</ToggleGroupItem><ToggleGroupItem value="bpm" aria-label="심박 높은 순">심박<ArrowDown size={13} /></ToggleGroupItem>
         </ToggleGroup></div>
-        <div className={styles.railList}>{remaining.map(live => {
-          const zone = live.cur === null ? null : zoneOf(live.cur, live.participant.age)
-          return <button key={live.participant.no} className={styles.railRow} onClick={() => selectFocus(live.participant.no)} data-rail-student={live.participant.no}>
-            <strong>{live.participant.no} {live.participant.name}</strong><b style={{ color: zone?.color }}>{valueText(live.cur)}</b><HeartRateChart live={live} rail />
-            <span style={{ color: zone?.color }}>{zone?.label ?? '신호 없음'}</span><i style={{ background: zone?.band ?? '#dcd8d8' }} />
+        <div className={styles.railList}>{remaining.map(slot => {
+          const live = slot.live
+          if (!live) return <div role="group" key={slot.no} className={`${styles.railRow} ${styles.unregisteredRailRow}`} data-rail-student={slot.no} data-slot-state="unregistered" aria-label={`${slot.no}번, 학생 미등록`}>
+            <strong>{slot.no} 학생 미등록</strong><b>--</b><span aria-hidden /><span>학생 미등록</span><i />
+          </div>
+          const state = getSerialDisplaySlotState(live)
+          const zone = state === 'live' ? zoneOf(live.cur!, live.participant.age) : null
+          const stateText = zone?.label ?? serialDisplaySlotStateLabel(state)
+          return <button key={live.participant.no} className={styles.railRow} onClick={() => selectFocus(live.participant.no)} data-rail-student={live.participant.no} data-slot-state={state}>
+            <strong>{live.participant.no} {live.participant.name}</strong><b style={{ color: zone?.color }}>{valueText(live.cur)}</b><HeartRateChart live={live} rail carryMissing />
+            <span style={{ color: zone?.color }}>{stateText}</span><i style={{ background: zone?.band ?? '#dcd8d8' }} />
           </button>
         })}</div>
       </aside>
-    </div> : <div className={styles.liveGrid} key="grid">{students.map(live => <StudentTile key={live.participant.no} live={live} warning={isWarning(live, now)} onFocus={() => selectFocus(live.participant.no)} />)}</div>}
+    </div> : <div className={styles.liveGrid} key="grid">{slots.map(slot => slot.live
+      ? <StudentTile key={slot.no} live={slot.live} warning={isWarning(slot.live, now)} onFocus={() => selectFocus(slot.no)} />
+      : <EmptyStudentTile key={slot.no} no={slot.no} />)}</div>}
 
  </div>
 }

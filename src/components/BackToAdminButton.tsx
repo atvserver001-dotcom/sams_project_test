@@ -4,9 +4,11 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function BackToAdminButton() {
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const [submitting, setSubmitting] = useState(false)
 
   const handleClick = async () => {
@@ -17,6 +19,7 @@ export default function BackToAdminButton() {
         method: 'DELETE',
         credentials: 'include',
       })
+      await refreshUser()
     } catch {}
     router.replace('/admin')
   }

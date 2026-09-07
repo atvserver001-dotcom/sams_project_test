@@ -85,6 +85,10 @@
 .tileStats b { color: #201e1d; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .noSignal { background: #f8f4f4; }
 .noSignal .tileReading > strong, .noSignal .tileIdentity > span { color: #9b9797; }
+.unassignedTile { box-shadow: inset 3px 0 0 #c77d08; }
+.unregisteredTile { border-style: dashed; background: #f3f2f2; color: #777272; cursor: default; }
+.unregisteredTile:hover { background: #f3f2f2; }
+.emptySlotBody { display: flex; flex: 1 1 64px; min-height: 20px; align-items: center; justify-content: center; color: #8b8787; font-size: 10px; text-align: center; }
 .warningTile { border: 2px solid #ae1800; padding: 9px 11px; }
 .focusLayout { display: grid; grid-template-columns: minmax(0, 1fr) 460px; flex: 1; min-height: 0; overflow: hidden; animation: reveal 160ms ease-out; }
 .focusDetail { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 16px; padding: 22px 24px; overflow: auto; }
@@ -100,14 +104,14 @@
 .currentKpi strong { font-size: 76px; line-height: .95; }
 .currentKpi span { color: #605d5d; font-size: 14px; }
 .zoneChip { padding: 5px 10px; color: #fff; font-size: 14px; white-space: nowrap; }
-.waveform { display: flex; flex-direction: column; gap: 12px; background: #fff; border: 1px solid #201e1d66; padding: 20px 22px; flex: 1; min-height: 370px; }
+.waveform { display: flex; flex-direction: column; gap: 12px; background: #fff; border: 1px solid #201e1d66; padding: 20px 22px; flex: 1; min-height: 0; }
 .waveformHeading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 16px; }
 .waveformHeading h3 { margin-right: auto; }
 .waveformHeading > span { font-size: 12px; display: flex; align-items: center; gap: 8px; }
 .waveformHeading i { width: 16px; border-top: 2px dashed #201e1d; }
-.detailChart { display: block; width: 100%; height: auto; min-height: 160px; aspect-ratio: 1300 / 380; flex: 0 0 auto; }
+.detailChart { display: block; width: 100%; min-height: 0; flex: 1; }
 .currentPulse { animation: pulse 2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-.focusMetrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; border-top: 2px solid #201e1d66; padding-top: 10px; margin-top: auto; }
+.focusMetrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; border-top: 2px solid #201e1d66; padding-top: 10px; flex-shrink: 0; }
 .focusMetrics > div { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; min-width: 0; }
 .focusMetrics > div + div { border-left: 1px solid #201e1d2e; }
 .focusMetrics strong { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -124,6 +128,8 @@
 .railRow b { text-align: right; font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .railRow > span { text-align: right; font-size: 11px; white-space: nowrap; }
 .railRow > i { width: 8px; height: 20px; }
+.unregisteredRailRow { border-style: dashed; background: #f3f2f2; color: #8b8787; cursor: default; }
+.unregisteredRailRow > i { background: #dcd8d8; }
 .railChart { width: 100%; height: 20px; }
 .liveEmpty { min-height: 70dvh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
 @keyframes reveal { from { opacity: .3; } to { opacity: 1; } }
@@ -145,6 +151,7 @@
   .focusMetrics { grid-template-columns: 1fr; }
   .focusMetrics > div + div { border-left: 0; border-top: 1px solid #201e1d2e; }
   .waveform { min-height: 550px; }
+  .detailChart { min-height: 250px; }
 }
 @media (max-width: 760px) {
   .monthlyBody { padding: 24px 16px; }
@@ -182,7 +189,7 @@
   .focusKpis > div { padding: 14px 12px; }
   .currentKpi strong { font-size: 48px; }
   .waveform { padding: 14px 10px; min-height: 590px; }
-  .detailChart { min-height: 250px; aspect-ratio: 480 / 380; }
+  .detailChart { flex: 1 0 250px; }
   .rail { border-left: 0; border-top: 2px solid #201e1d66; }
   .railRow { height: 44px; min-height: 44px; padding: 8px 12px; grid-template-columns: minmax(80px, 1fr) 42px minmax(60px, 146px) 60px 8px; }
   .notice { padding: 10px 12px; }

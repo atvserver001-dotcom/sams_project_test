@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
-import { chartGeometry, chartY, movingAverage, placeExtremeLabel, rawExtrema, relativeTimeLabel, tileSamples } from '@/lib/heart-rate/chart'
+import { chartGeometry, chartY, forwardFillShortDisplayGaps, movingAverage, placeExtremeLabel, rawExtrema, relativeTimeLabel, tileSamples } from '@/lib/heart-rate/chart'
 import { average, windowSamples, type LiveStudent } from '@/lib/heart-rate/session'
 import { formatDuration, HR_ZONES, zoneBounds, zoneOf } from '@/lib/heart-rate/zones'
 import styles from './heart-care.module.css'
 
-export function HeartRateChart({ live, detail = false, rail = false }: { live: LiveStudent; detail?: boolean; rail?: boolean }) {
+export function HeartRateChart({ live, detail = false, rail = false, carryMissing = false }: { live: LiveStudent; detail?: boolean; rail?: boolean; carryMissing?: boolean }) {
   const id = useId().replace(/:/g, '')
   const [compact, setCompact] = useState(false)
   useEffect(() => {
@@ -18,9 +18,10 @@ export function HeartRateChart({ live, detail = false, rail = false }: { live: L
     return () => media.removeEventListener('change', update)
   }, [detail])
   const raw = windowSamples(live)
-  const points = detail ? movingAverage(raw) : tileSamples(raw)
+  const displayRaw = carryMissing ? forwardFillShortDisplayGaps(raw) : raw
+  const points = detail ? movingAverage(displayRaw) : tileSamples(displayRaw)
   const width = detail ? compact ? 400 : 1200 : 264
-  const height = detail ? 320 : 64
+  const height = detail ? compact ? 320 : 500 : 64
   const start = raw[0]?.sec ?? 0
   const end = Math.max(start + 1, raw[raw.length - 1]?.sec ?? 1)
   const geometry = chartGeometry(points, width, height, start, end)
@@ -37,8 +38,8 @@ export function HeartRateChart({ live, detail = false, rail = false }: { live: L
   const timeTicks = raw.length <= 1 ? [0] : end - start < 4 ? [0, 1] : compact ? [0, .5, 1] : [0, .25, .5, .75, 1]
 
   return <svg className={detail ? styles.detailChart : rail ? styles.railChart : styles.tileChart}
-    viewBox={detail ? compact ? '0 0 480 380' : '0 0 1300 380' : '0 0 264 64'} role="img"
-    aria-label={`${live.participant.no}번 ${live.participant.name} 심박 파형, 60부터 200 bpm${mean === null ? ', 수신 기록 없음' : `, 세션 평균 ${mean} bpm`}`}
+    viewBox={detail ? compact ? '0 0 480 380' : '0 0 1300 558' : '0 0 264 64'} role="img"
+    aria-label={`${live.participant.no}번 ${live.participant.name} 심박 파형, 60부터 200 bpm${mean === null ? ', 수신 기록 없음' : `, 세션 평균 ${mean} bpm`}${geometry.carried.length ? ', 짧은 미수신 구간은 직전 수신값으로 이어 표시' : ''}`}
     data-chart={detail ? 'focus' : rail ? 'rail' : 'tile'}>
     <defs>
       <clipPath id={`${id}-area`}><path d={geometry.area} /></clipPath>
@@ -59,6 +60,11 @@ export function HeartRateChart({ live, detail = false, rail = false }: { live: L
       {!rail && bounds.slice(0, -1).filter(bound => bound >= 60 && bound <= 200).map(bound =>
         <line key={bound} y1={chartY(bound, height)} y2={chartY(bound, height)} x2={width} stroke="rgba(32,30,29,.22)" />)}
       {!rail && geometry.gaps.map((gap, index) => <rect key={index} x={gap.x} width={gap.width} height={height} fill={`url(#${id}-gap)`} data-signal-gap />)}
+      {geometry.carried.map((range, index) => <g key={index} data-signal-carried>
+        <title>직전 수신값으로 이어 표시한 짧은 미수신 구간</title>
+        <rect x={range.x} width={range.width} height={height} fill="#d97706" opacity=".09" />
+        <line x1={range.x} x2={range.x + range.width} y1={height - 1} y2={height - 1} stroke="#9a5b08" strokeWidth="1.5" strokeDasharray="4 3" opacity=".65" />
+      </g>)}
       <g clipPath={`url(#${id}-plot)`}>
         {detail && mean !== null && <line x2={width} y1={chartY(mean, height)} y2={chartY(mean, height)} stroke="#201e1d" strokeWidth="2" strokeDasharray="8 5" />}
         {geometry.segments.length === 1
@@ -76,7 +82,7 @@ export function HeartRateChart({ live, detail = false, rail = false }: { live: L
           const top = chartY(index === HR_ZONES.length - 1 ? 200 : bounds[index], height)
           const bottom = chartY(index === 0 ? 60 : bounds[index - 1], height)
           if (bottom - top < 12) return null
-          const range = index === 0 ? `<${bounds[0]}` : index === HR_ZONES.length - 1 ? `≥${bounds[3]}` : `${bounds[index - 1]}–${bounds[index] - 1}`
+          const range = index === 0 ? `<${bounds[0]}` : index === HR_ZONES.length - 1 ? `≥${bounds[index - 1]}` : `${bounds[index - 1]}–${bounds[index] - 1}`
           return <text key={zone.key} x={width - 8} y={top + (compact ? 18 : 14)} textAnchor="end" fontSize={compact ? 16 : 12} fontWeight="700" fill={index >= HR_ZONES.length - 2 ? '#ae1800' : '#605d5d'}>{zone.label} {range}</text>
         })}
         <line y2={height} stroke="#201e1d66" strokeWidth="2" />

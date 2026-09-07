@@ -16,7 +16,7 @@ export function ExerciseLegend({ metric = 'minutes' }: { metric?: ExerciseMetric
 }
 
 export function MonthlyExerciseChart({ rows, year, metric, category = 'all', height = 220, dashboard = false }: {
-  rows: ExerciseRow[]; year: number; metric: ExerciseMetric; category?: string; height?: number; dashboard?: boolean
+  rows: ExerciseRow[]; year: number; metric: ExerciseMetric; category?: string; height?: number | '100%'; dashboard?: boolean
 }) {
   const data = monthlySummary(rows, year)
   const fields = METRICS[metric].fields
@@ -28,7 +28,7 @@ export function MonthlyExerciseChart({ rows, year, metric, category = 'all', hei
     <Tooltip contentStyle={tooltipStyle} cursor={{ fill: '#201e1d08' }} formatter={value => `${formatValue(Number(value))} ${METRICS[metric].unit}`} labelFormatter={(_, payload) => payload?.[0]?.payload?.calendarMonth ?? ''} />
   </>
   return <div role="group" aria-label={`월별 ${METRICS[metric].label} 차트`} className="min-w-0" style={{ height }}>
-    {!available ? <div className="flex h-full items-center justify-center border-b-2 border-[#201e1d]/40 text-xs text-[#605d5d]">수신된 {METRICS[metric].label} 기록이 없습니다.</div> : <ResponsiveContainer width="100%" height={height} minWidth={0} initialDimension={{ width: 1, height }}>
+    {!available ? <div className="flex h-full items-center justify-center border-b-2 border-[#201e1d]/40 text-xs text-[#605d5d]">수신된 {METRICS[metric].label} 기록이 없습니다.</div> : <ResponsiveContainer width="100%" height={height} minWidth={0} initialDimension={{ width: 1, height: typeof height === 'number' ? height : 215 }}>
       {metric === 'minutes' || metric === 'calories' ? <BarChart accessibilityLayer data={data} margin={{ top: dashboard ? 0 : 20, right: dashboard ? 0 : 10, bottom: 0, left: 0 }} barCategoryGap={5}>
         {axis}
         {isStacked ? SERIES.map(series => <Bar key={series.key} dataKey={series.key} name={series.label} stackId="minutes" fill={series.color} radius={0} isAnimationActive={false}>

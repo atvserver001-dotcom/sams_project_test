@@ -1,3 +1,4 @@
 {
-  "buildCommand": "node scripts/verify-development-deployment.mjs && next build"
+  "buildCommand": "node scripts/verify-development-deployment.mjs && next build",
+  "regions": ["icn1"]
 }

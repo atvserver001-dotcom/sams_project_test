@@ -33,7 +33,7 @@ function menu(contents = [], devices = [], at = now) {
 }
 function assertHeart(items, isExpired = false) {
   assert.equal(items.length, 1)
-  assert.equal(items[0].label, '심박기록관리')
+  assert.equal(items[0].label, 'Heart Care')
   assert.equal(items[0].href, heartRoute)
   assert.equal(items[0].icon, HeartPulse)
   assert.equal(items[0].expired, isExpired)
@@ -168,7 +168,7 @@ test('other duplicate destinations consolidate without changing first label or r
   assert.deepEqual(items.map(item => [item.id, item.label, item.href, item.expired]), [
     ['content-c1', 'PAPS Care', '/school/paps', false],
     ['content-c2', '운동기록관리', '/school/exercises', false],
-    ['content-c3', '심박기록관리', heartRoute, false],
+    ['content-c3', 'Heart Care', heartRoute, false],
   ])
 })
 
@@ -178,7 +178,7 @@ test('unknown entries remain separate with original labels, order, and per-entry
     [device('준비 항목'), device('심박계', { device_id: 'd2' }), device('새 장치', { device_id: 'd3' })],
   )
   assert.deepEqual(items.map(item => [item.id, item.label]), [
-    ['content-c1', '준비 항목'], ['content-c2', '심박기록관리'], ['content-c3', '준비 항목'],
+    ['content-c1', '준비 항목'], ['content-c2', 'Heart Care'], ['content-c3', '준비 항목'],
     ['device-d1', '준비 항목'], ['device-d3', '새 장치'],
   ])
   for (const index of [0, 2, 3, 4]) {
@@ -230,7 +230,7 @@ test('frozen assignment records stay immutable and repeated builds return fresh 
   assert.notEqual(first.items[0], second.items[0])
   first.items[0].label = 'changed output'
   first.items[0].expired = true
-  assert.equal(second.items[0].label, '심박기록관리')
+  assert.equal(second.items[0].label, 'Heart Care')
   assert.equal(second.items[0].expired, false)
   assert.deepEqual({ contents, devices }, before)
 })

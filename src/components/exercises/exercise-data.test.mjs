@@ -97,39 +97,33 @@ test('class summary does not invent a day-level receipt date or record count', (
   assert.equal(summary.accuracy, null)
 })
 
-test('dashboard makes only GET reads, bounded to four class requests, without dummy data', async () => {
+test('dashboard reads the overview once and preserves the returned records', async () => {
   const originalFetch = globalThis.fetch
-  let active = 0
-  let peak = 0
-  let studentRequests = 0
-  let recordRequests = 0
+  const signal = new AbortController().signal
+  const row = makeRow()
+  row.minutes[2] = 0
+  const expected = {
+    school: { id: 'school-1', school_type: 2, name: '검증학교' },
+    classes: [{ grade: 1, classNo: 1, students: [{ id: row.student_id, student_no: 1, name: row.name }], rows: [row] }],
+    licenses: [],
+  }
+  let requests = 0
   globalThis.fetch = async (path, init) => {
+    requests++
     assert.equal(init.credentials, 'include')
     assert.equal(init.method, undefined)
     assert.equal(init.cache, 'no-store')
+    assert.equal(init.signal, signal)
     const url = new URL(path, 'http://localhost')
-    if (url.pathname.endsWith('/info')) return Response.json({ school: { school_type: 2, name: '검증학교' } })
-    if (url.pathname.endsWith('/contents') || url.pathname.endsWith('/devices')) return Response.json({ items: [] })
-    active++
-    peak = Math.max(peak, active)
-    await new Promise(resolve => setTimeout(resolve, 2))
-    active--
-    assert.equal(url.searchParams.get('year'), '2026')
-    if (url.pathname.endsWith('/students')) {
-      studentRequests++
-      return Response.json({ students: url.searchParams.get('grade') === '1' && url.searchParams.get('class_no') === '1' ? [{ id: 's1', student_no: 1, name: '등록학생' }] : [] })
-    }
-    recordRequests++
-    assert.equal(url.searchParams.get('category_type'), 'all')
-    return Response.json({ rows: [] })
+    assert.equal(url.pathname, '/api/school/dashboard/overview')
+    assert.equal(url.search, '?year=2026')
+    return Response.json(expected)
   }
   try {
-    const data = await dashboard.loadDashboard(2026, new AbortController().signal)
-    assert.equal(studentRequests, 30)
-    assert.equal(recordRequests, 1)
-    assert.ok(peak <= 4)
-    assert.equal(data.classes.length, 1)
-    assert.equal(data.classes[0].rows[0].name, '등록학생')
+    const data = await dashboard.loadDashboard(2026, signal)
+    assert.equal(requests, 1)
+    assert.deepEqual(data, expected)
+    assert.equal(data.classes[0].rows[0].minutes[2], 0)
     assert.equal(data.classes[0].rows[0].minutes[0], null)
   } finally { globalThis.fetch = originalFetch }
 })

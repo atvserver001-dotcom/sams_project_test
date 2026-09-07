@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { FeedbackProvider, useFeedback } from '@/components/console/feedback-provider'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,19 @@ export default function PreviewRuntime({ children }: { children: React.ReactNode
     {error || '샘플 미리보기 준비 중...'}
     {error && <Button variant="outline" onClick={() => window.location.reload()}><RotateCcw />다시 연결</Button>}
   </main>
-  return <AuthProvider><TooltipProvider><FeedbackProvider><PreviewDeviceBoundary>{children}</PreviewDeviceBoundary></FeedbackProvider></TooltipProvider></AuthProvider>
+  return <AuthProvider><PreviewAuthProbe /><TooltipProvider><FeedbackProvider><PreviewDeviceBoundary>{children}</PreviewDeviceBoundary></FeedbackProvider></TooltipProvider></AuthProvider>
+}
+
+// Local synthetic browser tests observe the real provider lifecycle without
+// adding diagnostics to the deployed application or reading session cookies.
+function PreviewAuthProbe() {
+  const { user, loading, schoolInfo, refreshUser } = useAuth()
+  useEffect(() => {
+    const refresh = () => { void refreshUser() }
+    window.addEventListener('preview:refresh-auth', refresh)
+    return () => window.removeEventListener('preview:refresh-auth', refresh)
+  }, [refreshUser])
+  return <output hidden id="preview-auth-state" data-user={user?.id ?? ''} data-school={schoolInfo?.id ?? ''} data-loading={String(loading)} />
 }
 
 function PreviewDeviceBoundary({ children }: { children: React.ReactNode }) {

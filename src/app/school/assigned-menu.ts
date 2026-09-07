@@ -50,7 +50,7 @@ function assignedMenu(
   }
   return {
     id,
-    label: href === '/school/heart-rate' ? '심박기록관리' : label,
+    label: href === '/school/heart-rate' ? 'Heart Care' : label,
     href,
     icon,
     expired: isExpired,

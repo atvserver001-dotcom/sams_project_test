@@ -29,7 +29,7 @@ export function HeartRateMonthlyView({ year, grade, classNo, schoolType, student
  const ages = useMemo(() => new Map(students.map(student => [student.student_no, deriveGradeProxyAge(schoolType, grade)])), [students, grade, schoolType])
  const summary = useMemo(() => monthlySummary(rows, ages), [rows, ages])
   return <div className={`${styles.root} ${styles.monthly}`}>
-    <PageHeader title="심박기록관리" eyebrow="Heart Care" actions={<>
+    <PageHeader title="Heart Care" eyebrow="Heart Care" actions={<>
       <div className={styles.monthlyStatus} data-state={state} role="status"><i />{statusText}</div>
       <Button asChild variant="outline"><a href={HEART_FIT_DOWNLOAD} target="_blank" rel="noopener noreferrer"><Download size={15} />Heart Fit 다운로드</a></Button>
     </>} />

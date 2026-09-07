@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
+import { loadCohortInParallel } from '@/lib/heart-rate/load-cohort'
 import { HeartRateMonthlyView } from './HeartRateMonthlyView'
 import { SerialHeartCareView } from './SerialHeartCareView'
 import { createSerialDisplay, appendAcceptedSample, syncSerialDisplay } from '@/lib/heart-rate/serial-display'
@@ -97,6 +99,7 @@ const emptyHeartRateRows = (students: StudentRow[]): HeartRateRow[] => {
 }
 
 export default function HeartCareWorkspace() {
+  const { schoolInfo } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const displayRef = useRef<Session | null>(null)
@@ -161,25 +164,12 @@ export default function HeartCareWorkspace() {
   const onChangeClassNo = (v: number) => { setClassNo(v) }
 
   useEffect(() => {
-    const loadSchool = async () => {
-      try {
-        const res = await fetch('/api/school/info', { credentials: 'include' })
-        const data = await res.json()
-        if (res.ok && data?.school?.school_type) {
-          const t = Number(data.school.school_type)
-          if (t === 1 || t === 2 || t === 3) {
-            setSchoolType(t as 1 | 2 | 3)
-            setGrade((g) => {
-              const maxG = t === 1 ? 6 : 3
-              return Math.min(Math.max(1, g), maxG)
-            })
-            setClassNo((c) => Math.min(Math.max(1, c), 10))
-          }
-        }
-      } catch { }
-    }
-    loadSchool()
-  }, [])
+    const t = schoolInfo?.school_type
+    if (t !== 1 && t !== 2 && t !== 3) return
+    setSchoolType(t)
+    setGrade(g => Math.min(Math.max(1, g), t === 1 ? 6 : 3))
+    setClassNo(c => Math.min(Math.max(1, c), 10))
+  }, [schoolInfo?.school_type])
 
   const requestHeartRateRows = useCallback(async (
     selection: CohortSelection,
@@ -209,28 +199,20 @@ export default function HeartCareWorkspace() {
 
     const loadCohort = async () => {
       try {
-        const studentsResponse = await fetch(
-          `/api/school/students?year=${selection.year}&grade=${selection.grade}&class_no=${selection.classNo}`,
-          { signal: controller.signal },
-        )
-        const studentsData = await studentsResponse.json()
-        if (!studentsResponse.ok) throw new Error(studentsData.error || '학생 조회 실패')
-
-        const nextStudents = Array.isArray(studentsData.students)
-          ? studentsData.students as StudentRow[]
-          : []
-        let nextRows: HeartRateRow[] = []
-        let heartRateLoadError: string | null = null
-
-        if (nextStudents.length > 0) {
-          try {
-            nextRows = await requestHeartRateRows(selection, controller.signal)
-          } catch (heartRateError) {
-            if (controller.signal.aborted) return
-            nextRows = emptyHeartRateRows(nextStudents)
-            heartRateLoadError = heartRateError instanceof Error ? heartRateError.message : String(heartRateError)
-          }
-        }
+        const cohort = await loadCohortInParallel(async () => {
+          const response = await fetch(
+            `/api/school/students?year=${selection.year}&grade=${selection.grade}&class_no=${selection.classNo}`,
+            { signal: controller.signal },
+          )
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.error || '학생 조회 실패')
+          return Array.isArray(data.students) ? data.students as StudentRow[] : []
+        }, () => requestHeartRateRows(selection, controller.signal), controller.signal)
+        const nextStudents = cohort.students
+        const nextRows = cohort.recordsError ? emptyHeartRateRows(nextStudents) : cohort.rows
+        const heartRateLoadError = cohort.recordsError
+          ? cohort.recordsError instanceof Error ? cohort.recordsError.message : String(cohort.recordsError)
+          : null
 
         if (controller.signal.aborted || studentFetchGenerationRef.current !== generation) return
         setStudents(nextStudents)
@@ -284,7 +266,7 @@ export default function HeartCareWorkspace() {
 
     void fetchMappings()
     return () => { cancelled = true }
-  }, [grade, classNo, year])
+  }, [])
 
   useEffect(() => {
     mappingsRef.current = mappings
@@ -574,7 +556,7 @@ export default function HeartCareWorkspace() {
         if (!createdSession) throw new Error('측정 세션이 준비되지 않았습니다.')
 
         displayRef.current = createSerialDisplay(createdSession, snapshot.mappings, {
-          schoolId: '', year: snapshot.year, grade: snapshot.grade, class_no: snapshot.classNo, schoolType,
+          schoolId: '', year: snapshot.year, grade: snapshot.grade, class_no: snapshot.classNo, schoolType: createdSession.session.school_type,
         }, run.startedAt)
         collector.begin({
           startedAt: run.startedAt,
