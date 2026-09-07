@@ -3,6 +3,8 @@
 import React from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function AdminLogoutButton() {
   const { signOut } = useAuth()
@@ -14,13 +16,14 @@ export default function AdminLogoutButton() {
   }
 
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="로그아웃"
+      title="로그아웃"
       onClick={handleClick}
-      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
     >
-      로그아웃
-    </button>
+      <LogOut aria-hidden="true" />
+    </Button>
   )
 }
-
-

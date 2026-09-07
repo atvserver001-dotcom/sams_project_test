@@ -1,7 +1,7 @@
-import { redirect } from 'next/navigation'
+import SchoolDashboard from '@/components/dashboard/school-dashboard'
 
 export default function SchoolHome() {
-  redirect('/school/students')
+  return <SchoolDashboard />
 }
 
 

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "paths": { "@/*": ["./src/*"] },
+    "tsBuildInfoFile": ".next-admin-preview/tsconfig.tsbuildinfo"
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next-admin-preview/types/**/*.ts"],
+  "exclude": ["../../node_modules"]
+}

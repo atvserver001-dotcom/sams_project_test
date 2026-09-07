@@ -1,4 +1,7 @@
 'use client'
+import { PageHeader } from '@/components/console/page-header'
+import { Button } from '@/components/ui/button'
+import { useFeedback } from '@/components/console/feedback-provider'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -12,6 +15,7 @@ interface SchoolDetailItem {
 }
 
 export default function SchoolDetailsPage() {
+  const { notify } = useFeedback()
   const { isAdmin } = useAuth()
   const [items, setItems] = useState<SchoolDetailItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,8 +28,14 @@ export default function SchoolDetailsPage() {
     setLoading(true)
     setError('')
     try {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-      const res = await fetch(`/api/admin/school-details?${params.toString()}`, { credentials: 'include' })
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      })
+      const res = await fetch(
+        `/api/admin/school-details?${params.toString()}`,
+        { credentials: 'include' },
+      )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '목록 조회 실패')
       setItems(data.items || [])
@@ -45,62 +55,97 @@ export default function SchoolDetailsPage() {
   const rows = useMemo(() => items.map((item) => item), [items])
 
   return (
-    <div className="space-y-6 text-white">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">학교 세부정보</h1>
-      </div>
+    <div className="console-page space-y-6">
+      <PageHeader title="학교 세부정보" eyebrow="운영 관리" />
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="bg-destructive/5 border-l-4 border-destructive p-4">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
-      <div className="bg-white/95 rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-white overflow-auto console-panel">
+        <table className="min-w-full divide-y divide-border/45 console-data-table">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">번호</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학교 이름</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">그룹번호</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">교사 계정</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제품 구성</th>
+              <th className="px-4 py-3 text-left text-[13px] font-bold text-foreground uppercase">
+                번호
+              </th>
+              <th className="px-4 py-3 text-left text-[13px] font-bold text-foreground uppercase">
+                학교 이름
+              </th>
+              <th className="px-4 py-3 text-left text-[13px] font-bold text-foreground uppercase">
+                그룹번호
+              </th>
+              <th className="px-4 py-3 text-left text-[13px] font-bold text-foreground uppercase">
+                교사 계정
+              </th>
+              <th className="px-4 py-3 text-left text-[13px] font-bold text-foreground uppercase">
+                제품 구성
+              </th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-border/45">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">불러오는 중...</td>
+                <td
+                  colSpan={6}
+                  className="px-4 py-6 text-center text-muted-foreground"
+                >
+                  불러오는 중...
+                </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">데이터가 없습니다.</td>
+                <td
+                  colSpan={6}
+                  className="px-4 py-6 text-center text-muted-foreground"
+                >
+                  데이터가 없습니다.
+                </td>
               </tr>
             ) : (
               rows.map((row) => (
                 <tr key={row.group_no}>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{row.index}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{row.name}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{row.group_no}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{row.teacher_accounts}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{row.device_count}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
+                  <td className="px-4 py-4 whitespace-nowrap text-[13px] text-foreground">
+                    {row.index}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-[13px] text-foreground">
+                    {row.name}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-[13px] text-foreground">
+                    {row.group_no}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-[13px] text-foreground">
+                    {row.teacher_accounts}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-[13px] text-foreground">
+                    {row.device_count}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-right text-[13px]">
                     <div className="inline-flex items-center gap-2">
-                      <button
+                      <Button
                         onClick={async () => {
                           try {
-                            const res = await fetch(`/api/admin/act-as?group_no=${encodeURIComponent(row.group_no)}`, { credentials: 'include' })
+                            const res = await fetch(
+                              `/api/admin/act-as?group_no=${encodeURIComponent(row.group_no)}`,
+                              { credentials: 'include' },
+                            )
                             const data = await res.json()
-                            if (!res.ok) throw new Error(data.error || '전환 실패')
+                            if (!res.ok)
+                              throw new Error(data.error || '전환 실패')
                             window.location.href = '/school'
                           } catch (e: unknown) {
                             const err = e as Error
-                            alert(err.message || '전환 실패')
+                            notify(err.message || '전환 실패')
                           }
                         }}
-                        className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
-                      >이동</button>
+                        variant="outline"
+                        className="px-3 py-1"
+                      >
+                        이동
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -112,22 +157,29 @@ export default function SchoolDetailsPage() {
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-white/80">총 {total}건 • 페이지 {page} / {Math.max(1, Math.ceil(total / pageSize))}</div>
+        <div className="text-sm text-muted-foreground">
+          총 {total}건 • 페이지 {page} /{' '}
+          {Math.max(1, Math.ceil(total / pageSize))}
+        </div>
         <div className="inline-flex gap-2">
-          <button
+          <Button
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-3 py-1 rounded bg-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/30"
-          >이전</button>
-          <button
+            variant="outline"
+            className="px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            이전
+          </Button>
+          <Button
             disabled={page >= Math.ceil(total / pageSize)}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 rounded bg-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/30"
-          >다음</button>
+            variant="outline"
+            className="px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            다음
+          </Button>
         </div>
       </div>
     </div>
   )
 }
-
-

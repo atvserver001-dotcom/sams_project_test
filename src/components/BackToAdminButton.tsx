@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function BackToAdminButton() {
   const router = useRouter()
@@ -20,14 +22,8 @@ export default function BackToAdminButton() {
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={submitting}
-      className="bg-gray-700 hover:bg-gray-800 disabled:opacity-60 text-white px-4 py-2 rounded-md text-sm font-medium"
-    >
-      관리자 페이지로 이동
-    </button>
+    <Button variant="ghost" onClick={handleClick} disabled={submitting}>
+      <ArrowLeft aria-hidden="true" /> 관리자로 돌아가기
+    </Button>
   )
 }
-
-

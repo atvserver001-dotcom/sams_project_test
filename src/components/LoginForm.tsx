@@ -1,193 +1,215 @@
 'use client'
-
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
-
+import {
+  ArrowUpRight,
+  AlertCircle,
+  LoaderCircle,
+  ArrowRight,
+} from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+const schema = z.object({
+  username: z.string().min(1, '아이디를 입력해주세요.'),
+  password: z.string().min(1, '비밀번호를 입력해주세요.'),
+})
+type Credentials = z.infer<typeof schema>
 export default function LoginForm() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
-  const [rememberId, setRememberId] = useState(false)
   const router = useRouter()
-  
+  const [error, setError] = useState('')
+  const [remember, setRemember] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<Credentials>({
+    resolver: zodResolver(schema),
+    defaultValues: { username: '', password: '' },
+  })
   useEffect(() => {
     try {
       const saved = localStorage.getItem('saved_username')
       if (saved) {
-        setUsername(saved)
-        setRememberId(true)
+        setValue('username', saved)
+        setRemember(true)
       }
     } catch {
-      // noop: localStorage unavailable
+      /* Browser storage can be disabled independently of sign-in. */
     }
-  }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  }, [setValue])
+  const submit = async ({ username, password }: Credentials) => {
     setError('')
-    setLoading(true)
-
-    if (!username || !password) {
-      setError('아이디와 비밀번호를 모두 입력해주세요.')
-      setLoading(false)
-      return
-    }
-
     try {
-      const { error: signInError, user } = await signIn(username, password)
-      
-      if (signInError) {
-        setError(signInError)
-      } else {
-        // 역할별 자동 이동
-        if (user?.role === 'admin') {
-          router.replace('/admin')
-        } else if (user?.role === 'school') {
-          router.replace('/school')
-        }
-        try {
-          if (rememberId) {
-            localStorage.setItem('saved_username', username)
-          } else {
-            localStorage.removeItem('saved_username')
-          }
-        } catch {
-          // noop: localStorage unavailable
-        }
+      const result = await signIn(username, password)
+      if (result.error) {
+        setError(result.error)
+        return
       }
+      try {
+        if (remember) localStorage.setItem('saved_username', username)
+        else localStorage.removeItem('saved_username')
+      } catch {
+        /* A successful sign-in must not depend on browser storage. */
+      }
+      if (result.user?.role === 'admin') router.replace('/admin')
+      else if (result.user?.role === 'school') router.replace('/school')
     } catch {
       setError('오류가 발생했습니다. 다시 시도해주세요.')
     }
-    
-    setLoading(false)
   }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 py-12 px-4 sm:px-6 lg:px-8">
-      <a
-        href="https://spopark.kr/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed top-4 right-4 inline-flex items-center gap-2 rounded-lg bg-white/90 text-gray-800 hover:bg-white px-4 py-2 text-sm font-semibold shadow-md border border-gray-200"
-      >
-        홈페이지
-        <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
-      </a>
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-8">
-          <div>
-            <div className="flex justify-center">
-              <Image
-                src="/image/logo_atv.svg?v=202020"
-                alt="스포파크 로고"
-                width={240}
-                height={72}
-                className="h-12 w-auto md:h-14"
-                style={{ color: 'rgba(32, 32, 32, 0)' }}
-                priority
+    <main className="login-page">
+      <section className="login-form-panel">
+        <Image
+          src="/image/logo_atvcms.svg"
+          width={155}
+          height={30}
+          className="h-[30px] w-auto self-start object-contain"
+          priority
+          alt="atvcms"
+        />
+        <div className="mb-auto w-full max-w-[420px] pb-16 pt-10">
+          <p className="mb-3 text-[11px] font-bold text-primary">
+            SCHOOL EXERCISE RECORDS
+          </p>
+          <h1 className="text-[34px] font-extrabold leading-[1.14]">
+            학교 운동 관리 시스템
+          </h1>
+          <p className="mt-4 text-sm text-muted-foreground">
+            학교 계정 또는 관리자 계정으로 로그인하세요.
+          </p>
+          <form
+            className="mt-9 space-y-[18px]"
+            onSubmit={handleSubmit(submit)}
+            noValidate
+          >
+            <div className="space-y-2">
+              <Label htmlFor="username">아이디</Label>
+              <Input
+                id="username"
+                autoComplete="username"
+                placeholder="아이디를 입력하세요"
+                className="h-12 bg-background px-4 text-[15px]"
+                aria-invalid={!!errors.username}
+                aria-describedby={
+                  errors.username ? 'username-error' : undefined
+                }
+                {...register('username')}
               />
+              {errors.username && (
+                <p id="username-error" className="text-xs text-destructive">
+                  {errors.username.message}
+                </p>
+              )}
             </div>
-            <p className="mt-8 text-center text-lg font-semibold text-gray-700">
-              학교 운동 관리 시스템
-            </p>
-            
-          </div>
-          
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  아이디
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-150"
-                  placeholder="아이디를 입력하세요"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  비밀번호
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-150"
-                  placeholder="비밀번호를 입력하세요"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-left">
-              <input
-                id="rememberId"
-                name="rememberId"
-                type="checkbox"
-                checked={rememberId}
-                onChange={(e) => setRememberId(e.target.checked)}
-                className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            <div className="space-y-2">
+              <Label htmlFor="password">비밀번호</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="비밀번호를 입력하세요"
+                className="h-12 bg-background px-4 text-[15px]"
+                aria-invalid={!!errors.password}
+                aria-describedby={
+                  errors.password ? 'password-error' : undefined
+                }
+                {...register('password')}
               />
-              <label htmlFor="rememberId" className="ml-3 block text-sm text-gray-900">
+              {errors.password && (
+                <p id="password-error" className="text-xs text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2.5 py-1">
+              <Checkbox
+                id="remember"
+                checked={remember}
+                onCheckedChange={(value) => setRemember(value === true)}
+              />
+              <Label htmlFor="remember" className="font-normal">
                 아이디 기억하기
-              </label>
+              </Label>
             </div>
-
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
+              <div
+                role="alert"
+                className="flex gap-3 border-l-[3px] border-destructive bg-accent p-4 text-[13px] text-accent-foreground"
+              >
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                {error}
               </div>
             )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 shadow-lg"
-              >
-                {loading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    로그인 중...
-                  </span>
-                ) : '로그인'}
-              </button>
-            </div>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-12 w-full justify-start px-4 text-[15px] font-bold"
+            >
+              {isSubmitting ? (
+                <>
+                  <LoaderCircle className="animate-spin" /> 로그인 중...
+                </>
+              ) : (
+                <>
+                  로그인 <ArrowRight className="ml-auto" />
+                </>
+              )}
+            </Button>
           </form>
         </div>
-        
-        <p className="mt-6 text-center text-xs text-white/80">
-          © 2025 AllThatVision. All rights reserved.
+        <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span>© AllThatVision. All rights reserved.</span>
+          <a
+            href="https://spopark.kr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-foreground"
+          >
+            spopark.kr <ArrowUpRight className="size-[13px]" />
+          </a>
+        </footer>
+      </section>
+      <section className="login-poster" aria-label="학생 운동 기록">
+        <p className="text-[11px] font-bold text-white/80">
+          ALL THAT VISION · SCHOOL ACTIVITY MANAGEMENT
         </p>
-      </div>
-    </div>
+        <h2 className="mb-auto mt-[108px] pb-16">
+          운동기록,
+          <br />
+          학급 단위로
+          <br />
+          한눈에.
+        </h2>
+        <div className="grid grid-cols-3 border-t-2 border-white/65">
+          {[
+            ['PAPS', '학생 건강체력 평가'],
+            ['Heart Care', '실시간 심박 기록'],
+            ['Health Care', '꾸준한 운동 관리'],
+          ].map(([title, detail], i) => (
+            <div
+              key={title}
+              className={
+                'px-4 py-[18px]' + (i ? ' border-l-2 border-white/65' : ' pl-0')
+              }
+            >
+              <p className="text-[24px] font-extrabold leading-tight">
+                {title}
+              </p>
+              <p className="mt-2 text-xs text-white/80">{detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
   )
 }

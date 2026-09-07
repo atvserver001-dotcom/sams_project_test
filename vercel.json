@@ -1,0 +1,3 @@
+{
+  "buildCommand": "node scripts/verify-development-deployment.mjs && next build"
+}

@@ -2,6 +2,13 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import {
+  HEART_RATE_MAX_BPM,
+  HEART_RATE_MAX_STORED_RECORD_COUNT,
+  HEART_RATE_MIN_BPM,
+  ValidatedHeartRateResult,
+  validateHeartRateRecordRequest,
+} from '@/lib/heartRateRecordValidation'
 import { supabaseAdmin } from '@/lib/supabase'
 
 type OperatorAccount = {
@@ -175,70 +182,48 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { results, grade, class_no, year } = await request.json()
-    if (!results || !Array.isArray(results) || results.length === 0) {
-      return NextResponse.json({ error: '결과 데이터가 올바르지 않습니다.' }, { status: 400 })
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: '요청 본문이 올바른 JSON이 아닙니다.' }, { status: 400 })
     }
 
+    const validation = validateHeartRateRecordRequest(body)
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
+
+    const { results, grade, class_no, year } = validation.value
     const schoolId = auth.account.school_id as string
+    const studentIds = results.map((result) => result.student_id)
 
-    // 1. student_id가 없는 데이터(신규 학생) 처리
-    for (const r of results) {
-      // UUID 형식이 아닌 경우(빈 문자열 등) 처리
-      const isInvalidUuid = !r.student_id || r.student_id.trim() === ''
+    // 요청의 모든 학생이 로그인 학교와 측정 시작 시점의 학급에 실제로 속하는지 확인한다.
+    // 일부만 일치해도 저장하지 않는다.
+    const { data: enrolledStudents, error: enrolledStudentsError } = await supabaseAdmin
+      .from('students')
+      .select('id, student_no')
+      .eq('school_id', schoolId)
+      .eq('year', year)
+      .eq('grade', grade)
+      .eq('class_no', class_no)
+      .in('id', studentIds)
+      .returns<Array<Pick<StudentRow, 'id' | 'student_no'>>>()
 
-      if (isInvalidUuid) {
-        // 학생 번호와 이름으로 기존 학생이 있는지 확인
-        const { data: existingStudent, error: studentError } = await supabaseAdmin
-          .from('students')
-          .select('id')
-          .eq('school_id', schoolId)
-          .eq('year', year || r.year)
-          .eq('grade', grade || r.grade)
-          .eq('class_no', class_no || r.class_no)
-          .eq('student_no', r.student_no)
-          .maybeSingle()
-
-        if (studentError) {
-          console.error('학생 조회 오류:', studentError)
-          continue
-        }
-
-        if (existingStudent) {
-          r.student_id = existingStudent.id
-        } else {
-          // 학생이 없으면 새로 생성
-          const { data: newStudent, error: createError } = await supabaseAdmin
-            .from('students')
-            .insert({
-              school_id: schoolId,
-              year: year || r.year,
-              grade: grade || r.grade,
-              class_no: class_no || r.class_no,
-              student_no: r.student_no,
-              name: r.name || `${r.student_no}번 학생`,
-            })
-            .select('id')
-            .single()
-
-          if (createError) {
-            console.error('학생 생성 오류:', createError)
-            continue
-          }
-          r.student_id = newStudent.id
-        }
-      }
+    if (enrolledStudentsError) {
+      console.error('심박수 저장 대상 학생 검증 오류:', enrolledStudentsError)
+      return NextResponse.json({ error: '저장 대상 학생을 확인하지 못했습니다.' }, { status: 500 })
     }
 
-    // 학생 생성이 안 된 항목(여전히 student_id가 없는 항목) 필터링
-    const validResults = results.filter(r => r.student_id && r.student_id.trim() !== '')
-
-    if (validResults.length === 0) {
-      return NextResponse.json({ error: '유효한 학생 데이터가 없습니다.' }, { status: 400 })
+    const enrolledById = new Map((enrolledStudents ?? []).map((student) => [student.id, student.student_no]))
+    const hasInvalidMembership = results.some((result) => (
+      enrolledById.get(result.student_id) !== result.student_no
+    ))
+    if (hasInvalidMembership || enrolledById.size !== results.length) {
+      return NextResponse.json({ error: '선택한 학교·학년도·학년·반에 속하지 않는 학생이 포함되어 있습니다.' }, { status: 400 })
     }
 
-    // 2. 기존 데이터 조회 테이터 추출
-    const studentIds = Array.from(new Set(validResults.map(r => r.student_id)))
+    // 기존 월 기록을 가져와 서버에서만 누적값을 계산한다.
     const { data: existingRecords, error: fetchError } = await supabaseAdmin
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from('heart_rate_records' as any)
@@ -251,49 +236,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: fetchError.message }, { status: 500 })
     }
 
-    // 기존 데이터를 빠르게 찾기 위한 맵 생성
-    const existingMap = new Map()
+    const existingMap = new Map<string, HeartRateMonthlyRow>()
     existingRecords?.forEach(r => {
       const key = `${r.student_id}-${r.year}-${r.month}`
       existingMap.set(key, r)
     })
 
-    // 3. 병합 로직 수행
-    const upsertData = validResults.map(r => {
+    const isStoredBpm = (value: number | null): value is number => (
+      typeof value === 'number'
+      && Number.isFinite(value)
+      && value >= HEART_RATE_MIN_BPM
+      && value <= HEART_RATE_MAX_BPM
+    )
+    type HeartRateUpsertRow = Omit<ValidatedHeartRateResult, 'student_no' | 'record_count'> & {
+      record_count: number
+      updated_at: string
+    }
+    const upsertData: HeartRateUpsertRow[] = []
+
+    for (const result of results) {
+      const r = result
       const key = `${r.student_id}-${r.year}-${r.month}`
       const old = existingMap.get(key)
+      const updatedAt = new Date().toISOString()
 
       if (old) {
-        // 기존 기록이 있는 경우 병합
-        const newCount = r.record_count
-        const oldCount = old.record_count || 0
-        const totalCount = oldCount + newCount
-
-        // 1) 가중 평균 계산
-        const oldAvg = old.avg_bpm || 0
-        const newAvg = r.avg_bpm || 0
-        const combinedAvg = Math.round((oldAvg * oldCount + newAvg * newCount) / totalCount * 10) / 10
-
-        // 2) 최고/최저 갱신
-        const combinedMax = Math.max(old.max_bpm || 0, r.max_bpm || 0)
-        let combinedMin = old.min_bpm || 999
-        if (r.min_bpm !== null && r.min_bpm < combinedMin) {
-          combinedMin = r.min_bpm
+        const oldAverageBpm = old.avg_bpm
+        const oldMaximumBpm = old.max_bpm
+        const oldMinimumBpm = old.min_bpm
+        if (
+          !Number.isInteger(old.record_count)
+          || old.record_count < 1
+          || old.record_count >= HEART_RATE_MAX_STORED_RECORD_COUNT
+          || !isStoredBpm(oldAverageBpm)
+          || !isStoredBpm(oldMaximumBpm)
+          || !isStoredBpm(oldMinimumBpm)
+          || oldMinimumBpm > oldAverageBpm
+          || oldAverageBpm > oldMaximumBpm
+        ) {
+          console.error('기존 심박수 월 기록의 값 범위가 올바르지 않습니다.', { key })
+          return NextResponse.json({ error: '기존 심박수 기록을 안전하게 병합할 수 없습니다.' }, { status: 500 })
         }
 
-        return {
+        const totalCount = old.record_count + 1
+        upsertData.push({
           student_id: r.student_id,
           year: r.year,
           month: r.month,
-          avg_bpm: combinedAvg,
-          max_bpm: combinedMax,
-          min_bpm: combinedMin === 999 ? r.min_bpm : combinedMin,
+          avg_bpm: Math.round(((oldAverageBpm * old.record_count + r.avg_bpm) / totalCount) * 10) / 10,
+          max_bpm: Math.max(oldMaximumBpm, r.max_bpm),
+          min_bpm: Math.min(oldMinimumBpm, r.min_bpm),
           record_count: totalCount,
-          updated_at: new Date().toISOString()
-        }
+          updated_at: updatedAt,
+        })
       } else {
-        // 기존 기록이 없는 경우 그대로 사용
-        return {
+        upsertData.push({
           student_id: r.student_id,
           year: r.year,
           month: r.month,
@@ -301,10 +298,10 @@ export async function POST(request: NextRequest) {
           max_bpm: r.max_bpm,
           min_bpm: r.min_bpm,
           record_count: r.record_count,
-          updated_at: new Date().toISOString()
-        }
+          updated_at: updatedAt,
+        })
       }
-    })
+    }
 
     const { error } = await supabaseAdmin
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -318,7 +315,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, count: results.length })
+    return NextResponse.json({ success: true, count: upsertData.length })
   } catch (err: unknown) {
     const e = err as Error
     return NextResponse.json({ error: e.message }, { status: 500 })

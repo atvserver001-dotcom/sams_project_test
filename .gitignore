@@ -12,9 +12,18 @@
 
 # testing
 /coverage
+/output/
+/test-results/
+/.playwright-cli/
 
 # next.js
 /.next/
+/.next-redesign-preview/
+/tests/chart-lab/.next-chart-lab/
+/tests/school-preview/.next-school-preview/
+/tests/school-preview/public/
+/tests/admin-preview/.next-admin-preview/
+/tests/admin-preview/public/
 /out/
 
 # production
@@ -39,3 +48,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local-only integration builds, tool state, and generated evidence
+/.next-integration-build/
+/.claude/
+/.cursor/
+/.omc/
+/supabase/.temp/
+*.log
+/tests/chart-verification/baseline-candidates/

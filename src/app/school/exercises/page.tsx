@@ -1,656 +1,146 @@
-"use client"
+'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChartNoAxesCombined, Download, List, Search, Table2 } from 'lucide-react'
+import { PageHeader } from '@/components/console/page-header'
+import { FilterBar } from '@/components/console/filter-bar'
+import { ClassFilterFields } from '@/components/console/class-filter-fields'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ExerciseComposition, ExerciseLegend, MonthlyExerciseChart } from '@/components/exercises/exercise-charts'
+import { ExerciseEmpty, ExerciseError, ExerciseLoading, ExercisePagination, ExerciseSegments } from '@/components/exercises/exercise-controls'
+import { ExerciseTable } from '@/components/exercises/exercise-table'
+import { CATEGORIES, CategoryFilter, ExerciseMetric, ExerciseRow, ExerciseSchool, ExerciseStudent, METRICS, MONTH_ORDER, academicYear, exerciseExportRows, hasRecord, joinStudents, monthLabel, readSchoolApi } from '@/components/exercises/exercise-data'
 
-type Gender = 'M' | 'F'
-
-interface StudentRow {
-  id: string
-  grade: number
-  class_no: number
-  student_no: number
-  name: string
-  gender: Gender | null
-  birth_date: string | null
-  email: string | null
-  height_cm: number | null
-  weight_kg: number | null
-  notes: string | null
-}
-
-type ViewMode = 'data' | 'chart'
-
-type CategoryFilter = 'all' | 1 | 2 | 3 | 4
-
-interface ExerciseRow {
-  student_id: string
-  student_no: number
-  name: string
-  minutes: (number | null)[]
-  avg_bpm: (number | null)[]
-  max_bpm: (number | null)[]
-  accuracy?: (number | null)[]
-  calories?: (number | null)[]
-  minutes_c1?: (number | null)[]
-  minutes_c2?: (number | null)[]
-  minutes_c3?: (number | null)[]
-}
+interface ExerciseResult { key: string; rows: ExerciseRow[]; error?: string }
 
 export default function ExercisesPage() {
-  // 학년도: 3~12월은 해당 연도, 1~2월은 전년도
-  const computeDefaultYear = () => {
-    const now = new Date()
-    const m = now.getMonth() + 1
-    return (m === 1 || m === 2) ? now.getFullYear() - 1 : now.getFullYear()
-  }
-
-  const [grade, setGrade] = useState<number>(1)
-  const [classNo, setClassNo] = useState<number>(1)
-  const [schoolType, setSchoolType] = useState<1 | 2 | 3>(1)
-  const [year, setYear] = useState<number>(computeDefaultYear())
+  const [year, setYear] = useState(academicYear)
+  const [grade, setGrade] = useState(1)
+  const [classNo, setClassNo] = useState(1)
   const [category, setCategory] = useState<CategoryFilter>('all')
-
-  const [students, setStudents] = useState<StudentRow[]>([])
-  const [rows, setRows] = useState<ExerciseRow[]>([])
-  const [error, setError] = useState<string | null>(null)
-
-  const [view, setView] = useState<ViewMode>('data')
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null)
-
-  const onChangeYear = (v: number) => { setYear(v) }
-  const onChangeGrade = (v: number) => { setGrade(v) }
-  const onChangeClassNo = (v: number) => { setClassNo(v) }
-  const onChangeCategory = (v: CategoryFilter) => { setCategory(v) }
+  const [metric, setMetric] = useState<ExerciseMetric>('minutes')
+  const [view, setView] = useState<'data' | 'chart'>('data')
+  const [allMetrics, setAllMetrics] = useState(false)
+  const [school, setSchool] = useState<ExerciseSchool | null>(null)
+  const [schoolError, setSchoolError] = useState<string | null>(null)
+  const [result, setResult] = useState<ExerciseResult | null>(null)
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(6)
+  const [revision, setRevision] = useState(0)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const key = `${year}-${grade}-${classNo}-${category}-${revision}`
 
   useEffect(() => {
-    const loadSchool = async () => {
-      try {
-        const res = await fetch('/api/school/info', { credentials: 'include' })
-        const data = await res.json()
-        if (res.ok && data?.school?.school_type) {
-          const t = Number(data.school.school_type)
-          if (t === 1 || t === 2 || t === 3) {
-            setSchoolType(t as 1 | 2 | 3)
-            setGrade((g) => {
-              const maxG = t === 1 ? 6 : 3
-              return Math.min(Math.max(1, g), maxG)
-            })
-            setClassNo((c) => Math.min(Math.max(1, c), 10))
-          }
-        }
-      } catch { }
-    }
-    loadSchool()
+    const params = new URLSearchParams(window.location.search)
+    const requestedYear = Number(params.get('year'))
+    const requestedGrade = Number(params.get('grade'))
+    const requestedClass = Number(params.get('class_no'))
+    if (Number.isInteger(requestedYear) && requestedYear >= academicYear() - 5 && requestedYear <= academicYear() + 1) setYear(requestedYear)
+    if (Number.isInteger(requestedGrade) && requestedGrade >= 1 && requestedGrade <= 6) setGrade(requestedGrade)
+    if (Number.isInteger(requestedClass) && requestedClass >= 1 && requestedClass <= 10) setClassNo(requestedClass)
   }, [])
 
-  const fetchStudents = async () => {
-    try {
-      setError(null)
-      const res = await fetch(`/api/school/students?year=${year}&grade=${grade}&class_no=${classNo}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || '학생 조회 실패')
-      setStudents(data.students as StudentRow[])
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e)
-      setError(message)
-    } finally {
-
-    }
-  }
+  useEffect(() => {
+    const controller = new AbortController()
+    setSchoolError(null)
+    readSchoolApi<{ school: ExerciseSchool }>('/api/school/info', controller.signal).then(data => {
+      setSchool(data.school)
+      setGrade(value => Math.min(value, data.school.school_type === 1 ? 6 : 3))
+    }).catch(error => { if (!controller.signal.aborted) setSchoolError(error instanceof Error ? error.message : '학교 조회 실패') })
+    return () => controller.abort()
+  }, [revision])
 
   useEffect(() => {
-    fetchStudents()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grade, classNo, year])
-
-  const fetchExercises = async (yearValue: number, studs: StudentRow[]) => {
-    try {
-      setError(null)
-      setTooltip(null)
-      const ctParam = category === 'all' ? 'all' : String(category)
-      const res = await fetch(`/api/school/exercises?grade=${grade}&class_no=${classNo}&year=${yearValue}&category_type=${ctParam}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || '운동 기록 조회 실패')
-      const apiRows = (data.rows || []) as ExerciseRow[]
-      setRows(apiRows)
-    } catch (e: unknown) {
-      // 실패 시 빈 데이터로라도 렌더링되도록 학생 목록 기준으로 초기화
-      const empty12 = Array.from({ length: 12 }, () => null as number | null)
-      const mapped: ExerciseRow[] = studs
-        .slice()
-        .sort((a, b) => (a.student_no ?? 0) - (b.student_no ?? 0))
-        .map(s => ({
-          student_id: s.id,
-          student_no: s.student_no,
-          name: s.name,
-          minutes: [...empty12],
-          avg_bpm: [...empty12],
-          max_bpm: [...empty12],
-          accuracy: [...empty12],
-          calories: [...empty12],
-          minutes_c1: [...empty12],
-          minutes_c2: [...empty12],
-          minutes_c3: [...empty12],
-        }))
-      setRows(mapped)
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-
+    if (!school) return
+    const controller = new AbortController()
+    async function load() {
+      try {
+        const params = new URLSearchParams({ year: String(year), grade: String(grade), class_no: String(classNo) })
+        const students = await readSchoolApi<{ students: ExerciseStudent[] }>(`/api/school/students?${params}`, controller.signal)
+        params.set('category_type', String(category))
+        const exercises = await readSchoolApi<{ rows: ExerciseRow[] }>(`/api/school/exercises?${params}`, controller.signal)
+        if (!controller.signal.aborted) setResult({ key, rows: joinStudents(students.students, exercises.rows) })
+      } catch (error) {
+        if (!controller.signal.aborted) setResult({ key, rows: [], error: error instanceof Error ? error.message : '기록 조회 실패' })
+      }
     }
+    void load()
+    return () => controller.abort()
+  }, [year, grade, classNo, category, key, school])
+
+  const loading = !schoolError && (!school || result?.key !== key)
+  const error = schoolError || (result?.key === key ? result.error : null)
+  const rows = useMemo(() => result?.key === key && !result.error ? result.rows : [], [result, key])
+  const filtered = useMemo(() => rows.filter(row => `${row.student_no} ${row.name}`.includes(query.trim())), [rows, query])
+  const currentPage = Math.min(page, Math.max(0, Math.ceil(filtered.length / pageSize) - 1))
+  const pageRows = useMemo(() => filtered.slice(currentPage * pageSize, (currentPage + 1) * pageSize), [filtered, currentPage, pageSize])
+  const retry = () => setRevision(value => value + 1)
+  const resetPage = () => { setPage(0); setExportError(null) }
+
+  async function exportRecords() {
+    setExporting(true)
+    setExportError(null)
+    try {
+      const XLSX = await import('xlsx')
+      const workbook = XLSX.utils.book_new()
+      const worksheet = XLSX.utils.aoa_to_sheet([
+        [`${year}학년도 ${grade}학년 ${classNo}반`, CATEGORIES.find(item => item.value === String(category))?.title],
+        ['번호', '이름', '지표', ...MONTH_ORDER.map(index => monthLabel(year, index)), '합계 / 평균 / 최대'],
+        ...exerciseExportRows(filtered),
+      ])
+      worksheet['!cols'] = [{ wch: 7 }, { wch: 16 }, { wch: 22 }, ...MONTH_ORDER.map(() => ({ wch: 12 })), { wch: 23 }]
+      XLSX.utils.book_append_sheet(workbook, worksheet, '운동기록')
+      XLSX.writeFile(workbook, `운동기록_${year}_${grade}학년${classNo}반_${category}.xlsx`)
+    } catch { setExportError('엑셀 내보내기에 실패했습니다. 다시 시도해 주세요.') }
+    finally { setExporting(false) }
   }
 
-  useEffect(() => {
-    if (students.length === 0) {
-      setRows([])
-      return
-    }
-    fetchExercises(year, students)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [students, year, category])
-
-  const monthOrderIdx = useMemo(() => [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1], [])
-  const months = useMemo(() => monthOrderIdx.map((idx) => `${idx + 1}월`), [monthOrderIdx])
-  const monthCellPx = 56 // 표 월별 셀 고정 폭(px)
-  const contentKey = useMemo(() => `${year}-${grade}-${classNo}-${String(category)}`, [year, grade, classNo, category])
-
-
-
-  // 칼로리는 서버 record_type=5 값을 그대로 사용
-
-  const minutesMax = useMemo(() => {
-    const vals: number[] = []
-    for (const r of rows) {
-      for (const v of r.minutes) if (typeof v === 'number') vals.push(v)
-    }
-    const max = vals.length ? Math.max(...vals) : 0
-    return max || 1
-  }, [rows])
-
-  const caloriesMax = useMemo(() => {
-    const vals: number[] = []
-    for (const r of rows) {
-      const calArr = r?.calories ?? Array.from({ length: 12 }, () => null as number | null)
-      for (const v of calArr) if (typeof v === 'number') vals.push(v)
-    }
-    const max = vals.length ? Math.max(...vals) : 0
-    return max || 1
-  }, [rows])
-
-  const bpmMax = useMemo(() => {
-    const vals: number[] = []
-    for (const r of rows) {
-      for (const v of r.avg_bpm) if (typeof v === 'number') vals.push(v)
-      for (const v of r.max_bpm) if (typeof v === 'number') vals.push(v)
-    }
-    const max = vals.length ? Math.max(...vals) : 0
-    return max || 1
-  }, [rows])
-
-
-
-  return (
-    <div className="space-y-6 text-white">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">운동 기록 관리</h1>
-      </div>
-
-      <div className="bg-white/95 rounded-lg shadow p-6">
-        <div className="flex flex-wrap items-end gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-indigo-700 mb-1">년도</label>
-            <select
-              value={year}
-              onChange={(e) => onChangeYear(Number(e.target.value))}
-              className="block w-36 h-12 px-4 rounded-lg border-2 border-indigo-300 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 hover:border-indigo-300 active:border-indigo-300"
-            >
-              {(() => {
-                const base = computeDefaultYear()
-                const years: number[] = []
-                for (let y = base + 1; y >= base - 5; y--) {
-                  years.push(y)
-                }
-                return years.map((y) => (
-                  <option key={y} value={y}>{y}년</option>
-                ))
-              })()}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-indigo-700 mb-1">학년</label>
-            <select
-              value={grade}
-              onChange={(e) => onChangeGrade(Number(e.target.value))}
-              className="block w-36 h-12 px-4 rounded-lg border-2 border-indigo-300 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 hover:border-indigo-300 active:border-indigo-300"
-            >
-              {Array.from({ length: schoolType === 1 ? 6 : 3 }).map((_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1}학년</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-indigo-700 mb-1">반</label>
-            <select
-              value={classNo}
-              onChange={(e) => onChangeClassNo(Number(e.target.value))}
-              className="block w-36 h-12 px-4 rounded-lg border-2 border-indigo-300 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 hover:border-indigo-300 active:border-indigo-300"
-            >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1}반</option>
-              ))}
-            </select>
-          </div>
+  return <div className="min-w-0 bg-background text-foreground">
+    <PageHeader className="[&_h1]:!text-[19px] [&_h1]:!leading-[1.2] [&_p]:text-[10px] [&_p]:leading-[1.3]" eyebrow="기록 통계" title="운동기록 · 학급 리포트" actions={<Button variant="outline" disabled={loading || !!error || !filtered.length || exporting} onClick={exportRecords}><Download className="h-[15px] w-[15px]" />{exporting ? '내보내는 중' : '엑셀 내보내기'}</Button>} />
+    <FilterBar className="sticky top-0 z-30">
+      <ClassFilterFields
+        year={year} grade={grade} classNo={classNo}
+        years={Array.from({ length: 7 }, (_, index) => {
+          const value = academicYear() + 1 - index
+          return { value, label: `${value}학년도` }
+        })}
+        gradeCount={school?.school_type === 1 ? 6 : 3}
+        onYearChange={value => { setYear(value); resetPage() }}
+        onGradeChange={value => { setGrade(value); resetPage() }}
+        onClassChange={value => { setClassNo(value); resetPage() }}
+      />
+      <div className="max-w-full space-y-1.5"><p className="text-xs text-muted-foreground">운동 종목</p><ExerciseSegments label="운동 종목" value={String(category)} onChange={value => { setCategory(value === 'all' ? 'all' : Number(value) as CategoryFilter); resetPage() }} options={CATEGORIES} /></div>
+      <div className="ml-auto max-w-full space-y-1.5"><p className="text-xs text-muted-foreground">지표</p><ExerciseSegments label="운동 지표" value={metric} onChange={value => setMetric(value as ExerciseMetric)} options={Object.entries(METRICS).map(([value, item]) => ({ value, label: item.label }))} /></div>
+    </FilterBar>
+    <div className="space-y-5 px-4 py-6 sm:px-7">
+      {error ? <ExerciseError message={error} retry={retry} /> : loading ? <ExerciseLoading /> : <>
+        {!rows.some(row => hasRecord(row)) && <ExerciseEmpty noStudents={!rows.length} />}
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+          <section className="flex min-h-[346px] min-w-0 flex-col gap-[14px] border border-border bg-white p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-3"><h2 className="text-[15px] leading-[1.2] font-extrabold">월별 평균 심박 / 최대 심박</h2><p className="text-xs text-foreground/55">{grade}학년 {classNo}반 · {rows.length}명</p></div>
+            <MonthlyExerciseChart rows={rows} year={year} metric="bpm" category={String(category)} height={220} />
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-2"><ExerciseLegend metric="bpm" /><p className="text-[11px] text-foreground/50">평균: 기록이 있는 학생·월 기준</p></div>
+          </section>
+          <ExerciseComposition rows={rows} studentCount={rows.length} />
         </div>
-      </div>
-
-      {/* 운동종류 / 데이터-그래프 토글: 위치 이동 (필터 패널과 리스트 사이) */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* 운동종류 카테고리 */}
-        <div className="inline-flex rounded-full overflow-hidden border border-white/70 shadow">
-          <button
-            onClick={() => onChangeCategory('all')}
-            className={`px-4 py-2 text-sm font-semibold transition ${category === 'all' ? 'bg-amber-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            전체
-          </button>
-          <button
-            onClick={() => onChangeCategory(1)}
-            className={`px-4 py-2 text-sm font-semibold transition ${category === 1 ? 'bg-amber-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            근력.근지구력운동
-          </button>
-          <button
-            onClick={() => onChangeCategory(2)}
-            className={`px-4 py-2 text-sm font-semibold transition ${category === 2 ? 'bg-amber-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            심폐지구력운동
-          </button>
-          <button
-            onClick={() => onChangeCategory(3)}
-            className={`px-4 py-2 text-sm font-semibold transition ${category === 3 ? 'bg-amber-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            유연성운동
-          </button>
-        </div>
-
-        {/* 데이터/그래프 토글 */}
-        <div className="inline-flex rounded-full overflow-hidden border border-white/70 shadow">
-          <button
-            onClick={() => setView('data')}
-            className={`px-4 py-2 text-sm font-semibold transition ${view === 'data' ? 'bg-cyan-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            데이터
-          </button>
-          <button
-            onClick={() => setView('chart')}
-            className={`px-4 py-2 text-sm font-semibold transition ${view === 'chart' ? 'bg-cyan-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            그래프
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white/95 rounded-lg shadow p-6 text-gray-900">
-        {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
-
-        {view === 'data' ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 table-fixed">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 w-16 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">번호</th>
-                  <th className="px-3 py-2 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                  <th className="px-2 py-2 w-20 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-                  {months.map((m) => (
-                    <th
-                      key={m}
-                      className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      style={{ width: monthCellPx }}
-                    >
-                      {m}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {Array.from({ length: 30 }).map((_, idx) => {
-                  const num = idx + 1
-                  const s = students.find(st => st.student_no === num) || null
-                  const r = rows.find(rr => rr.student_no === num) || null
-
-                  const minutes = r?.minutes ?? Array.from({ length: 12 }, () => null as number | null)
-                  const accArr = r?.accuracy ?? Array.from({ length: 12 }, () => null as number | null)
-                  const extraRows = 1 /* accuracy */ + 1 /* calories */
-                  const mergedRowSpan = 3 + extraRows
-
-                  return (
-                    <React.Fragment key={num}>
-                      <tr className=" bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 align-middle text-center" rowSpan={mergedRowSpan}>{num}</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 align-middle text-center" rowSpan={mergedRowSpan}>
-                          {s ? s.name : `${num}번 학생`}
-                        </td>
-                        <td className="px-2 py-2 whitespace-nowrap text-xs text-center text-indigo-700 font-semibold">운동시간</td>
-                        {monthOrderIdx.map((origIdx, i) => {
-                          const v = minutes[origIdx] as number | null
-                          return <td key={i} className="px-2 py-2 whitespace-nowrap text-sm text-center text-gray-900" style={{ width: monthCellPx }}>{typeof v === 'number' ? v.toFixed(1) : '-'}</td>
-                        })}
-                      </tr>
-                      <tr className="  bg-teal-50">
-                        <td className="px-2 py-2 whitespace-nowrap text-xs text-center text-teal-700 font-semibold">정확도</td>
-                        {monthOrderIdx.map((origIdx, i) => {
-                          const v = accArr[origIdx] as number | null
-                          return <td key={i} className="px-2 py-2 whitespace-nowrap text-xs text-center text-gray-500" style={{ width: monthCellPx }}>{v ?? '-'}</td>
-                        })}
-                      </tr>
-                      <tr className="  bg-violet-50">
-                        <td className="px-2 py-2 whitespace-nowrap text-xs text-center text-violet-700 font-semibold">평균 bpm</td>
-                        {monthOrderIdx.map((origIdx, i) => {
-                          const v = (r?.avg_bpm ?? Array.from({ length: 12 }, () => null as number | null))[origIdx] as number | null
-                          return <td key={i} className="px-2 py-2 whitespace-nowrap text-xs text-center text-gray-500" style={{ width: monthCellPx }}>{v ?? '-'}</td>
-                        })}
-                      </tr>
-                      <tr className="  bg-rose-50">
-                        <td className="px-2 py-2 whitespace-nowrap text-xs text-center text-rose-700 font-semibold">최대 bpm</td>
-                        {monthOrderIdx.map((origIdx, i) => {
-                          const v = (r?.max_bpm ?? Array.from({ length: 12 }, () => null as number | null))[origIdx] as number | null
-                          return <td key={i} className="px-2 py-2 whitespace-nowrap text-xs text-center text-gray-500" style={{ width: monthCellPx }}>{v ?? '-'}</td>
-                        })}
-                      </tr>
-                      <tr className="  bg-yellow-50">
-                        <td className="px-2 py-2 whitespace-nowrap text-xs text-center text-yellow-700 font-semibold">칼로리</td>
-                        {(() => {
-                          const calArr = r?.calories ?? Array.from({ length: 12 }, () => null as number | null)
-                          return monthOrderIdx.map((origIdx, i) => {
-                            const v = calArr[origIdx] as number | null
-                            const display = typeof v === 'number' ? v.toFixed(1) : '-'
-                            return <td key={i} className="px-2 py-2 whitespace-nowrap text-xs text-center text-gray-500" style={{ width: monthCellPx }}>{display}</td>
-                          })
-                        })()}
-                      </tr>
-                    </React.Fragment>
-                  )
-                })}
-              </tbody>
-            </table>
+        <section className="min-w-0 border border-border bg-white">
+          <div className="flex flex-wrap items-center gap-3 border-b-2 border-border px-[18px] py-[10px]">
+            <h2 className="mr-auto text-[15px] font-extrabold">학생별 월간 {allMetrics && view === 'data' ? '운동 기록' : `${METRICS[metric].label} (${METRICS[metric].unit})`}</h2>
+            <div className="relative w-full sm:w-[190px]"><Search aria-hidden className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input aria-label="학생 이름 또는 번호 검색" placeholder="학생 이름 · 번호" value={query} onChange={event => { setQuery(event.target.value); resetPage() }} className="h-9 rounded-none bg-background pl-9 text-[13px]" /></div>
+            {view === 'data' && <Button variant={allMetrics ? 'default' : 'outline'} aria-pressed={allMetrics} onClick={() => setAllMetrics(value => !value)}><List className="h-[15px] w-[15px]" />모든 지표</Button>}
+            <ExerciseSegments label="기록 보기" value={view} onChange={value => setView(value as 'data' | 'chart')} options={[{ value: 'data', label: <><Table2 className="h-[15px] w-[15px]" />데이터</>, title: '데이터 보기' }, { value: 'chart', label: <><ChartNoAxesCombined className="h-[15px] w-[15px]" />그래프</>, title: '그래프 보기' }]} />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4" key={contentKey}>
-            {Array.from({ length: 30 }).map((_, idx) => {
-              const num = idx + 1
-              const s = students.find(st => st.student_no === num) || null
-              const r = rows.find(rr => rr.student_no === num) || null
-              const minutesDataRaw = r?.minutes ?? Array.from({ length: 12 }, () => null as number | null)
-              const avgDataRaw = r?.avg_bpm ?? Array.from({ length: 12 }, () => null as number | null)
-              const maxDataRaw = r?.max_bpm ?? Array.from({ length: 12 }, () => null as number | null)
-              const calDataRaw = r?.calories ?? Array.from({ length: 12 }, () => null as number | null)
-              const mC1Raw = r?.minutes_c1 ?? Array.from({ length: 12 }, () => null as number | null)
-              const mC2Raw = r?.minutes_c2 ?? Array.from({ length: 12 }, () => null as number | null)
-              const mC3Raw = r?.minutes_c3 ?? Array.from({ length: 12 }, () => null as number | null)
-              const minutesDataRawOrdered = monthOrderIdx.map((idx) => minutesDataRaw[idx] as number | null)
-              const avgDataRawOrdered = monthOrderIdx.map((idx) => avgDataRaw[idx] as number | null)
-              const maxDataRawOrdered = monthOrderIdx.map((idx) => maxDataRaw[idx] as number | null)
-              const calDataRawOrdered = monthOrderIdx.map((idx) => calDataRaw[idx] as number | null)
-              const mC1Ordered = monthOrderIdx.map((idx) => mC1Raw[idx] as number | null)
-              const mC2Ordered = monthOrderIdx.map((idx) => mC2Raw[idx] as number | null)
-              const mC3Ordered = monthOrderIdx.map((idx) => mC3Raw[idx] as number | null)
-              const minutesData = minutesDataRawOrdered.map((v: number | null) => (typeof v === 'number' ? v : 0))
-              const avgData = avgDataRawOrdered.map((v: number | null) => (typeof v === 'number' ? v : 0))
-              const maxData = maxDataRawOrdered.map((v: number | null) => (typeof v === 'number' ? v : 0))
-              const calData = calDataRawOrdered.map((v: number | null) => (typeof v === 'number' ? v : 0))
-              const mC1 = mC1Ordered.map((v: number | null) => (typeof v === 'number' ? v : 0))
-              const mC2 = mC2Ordered.map((v: number | null) => (typeof v === 'number' ? v : 0))
-              const mC3 = mC3Ordered.map((v: number | null) => (typeof v === 'number' ? v : 0))
-
-              const width = 500
-              const height = 80
-              const barW = Math.max(2, Math.floor((width - 24) / 12))
-              const gap = Math.max(2, Math.floor((width - 24 - barW * 12) / 11))
-
-
-
-              // 카테고리별 공통: 운동시간 바 차트 + BPM 라인 오버레이
-              return (
-                <div key={num} className="border rounded-lg p-3 bg-white">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-semibold text-gray-900">
-                      {num}. {s ? s.name : `${num}번 학생`}
-                    </div>
-
-                  </div>
-                  <div className="flex items-center gap-10 justify-center">
-                    {/* 왼쪽: 운동시간 바 차트 (카테고리≠전체일 때 정확도 캡 오버레이) */}
-                    <div>
-                      <div className="mb-1 text-xs text-gray-600 flex items-center gap-3">
-                        {category !== 'all' ? (
-                          <>
-                            <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-2 rounded-sm bg-indigo-400" /> 운동시간</span>
-                            <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-2 rounded-sm bg-teal-600" /> 정확도</span>
-                            <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-2 rounded-sm bg-yellow-500" /> 칼로리</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-2 rounded-sm bg-[#2563eb]" /> 근력</span>
-                            <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-2 rounded-sm bg-[#16a34a]" /> 지구력</span>
-                            <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-2 rounded-sm bg-[#ec4899]" /> 유연성</span>
-                            <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-2 rounded-sm bg-yellow-500" /> 칼로리</span>
-                          </>
-                        )}
-                      </div>
-                      <svg width={width} height={height} className="block">
-                        {minutesData.map((v, i) => {
-                          const h = minutesMax > 0 ? Math.round((v / minutesMax) * (height - 6)) : 0
-                          const x = 12 + i * (barW + gap)
-                          const y = height - 3 - h
-                          const accVal = r?.accuracy?.[monthOrderIdx[i]]
-                          const rawMinutesVal = r?.minutes?.[monthOrderIdx[i]]
-                          const accText = category !== 'all' ? ` / 정확도 ${typeof accVal === 'number' ? accVal : '-'}%` : ''
-                          const calVal = calData[i]
-                          const calH = caloriesMax > 0 ? Math.round((calVal / caloriesMax) * (height - 6)) : 0
-                          const minutesBarW = Math.max(2, Math.floor(barW * 0.85))
-                          const calBarW = Math.max(0, barW - minutesBarW)
-                          const minutesX = x
-                          const calX = x + minutesBarW
-                          return (
-                            <g key={i}>
-                              {category === 'all' ? (() => {
-                                const total = v
-                                const c1 = mC1[i]
-                                const c2 = mC2[i]
-                                const c3 = mC3[i]
-                                const h1 = Math.round(h * (total > 0 ? c1 / total : 0))
-                                const h2 = Math.round(h * (total > 0 ? c2 / total : 0))
-                                const h3 = Math.max(0, h - h1 - h2)
-                                let yCursor = height - 3 - h
-                                const parts: { h: number; color: string; label: string }[] = [
-                                  { h: h1, color: '#2563eb', label: '근력' },
-                                  { h: h2, color: '#16a34a', label: '심폐' },
-                                  { h: h3, color: '#ec4899', label: '유연성' },
-                                ]
-                                return (
-                                  <g>
-                                    {parts.map((p, idx2) => {
-                                      const rectEl = (
-                                        <rect
-                                          key={`stack-${idx2}`}
-                                          x={minutesX}
-                                          y={yCursor}
-                                          width={minutesBarW}
-                                          height={p.h}
-                                          rx={1}
-                                          style={{ fill: p.color }}
-                                          opacity={(r?.minutes?.[monthOrderIdx[i]] ?? null) == null ? 0.25 : 1}
-                                          onMouseEnter={(e) => setTooltip({ x: e.clientX + 12, y: e.clientY + 12, content: `${num}. ${(s?.name) ?? '-'} · ${monthOrderIdx[i] + 1}월 ${p.label} ${(() => { const segVal = idx2 === 0 ? c1 : idx2 === 1 ? c2 : c3; return typeof segVal === 'number' ? segVal.toFixed(1) : '-' })()}분 / 총 ${typeof (r?.minutes?.[monthOrderIdx[i]]) === 'number' ? (r?.minutes?.[monthOrderIdx[i]] as number).toFixed(1) : '-'}분` })}
-                                          onMouseMove={(e) => setTooltip((prev) => (prev ? { ...prev, x: e.clientX + 12, y: e.clientY + 12 } : prev))}
-                                          onMouseLeave={() => setTooltip(null)}
-                                        />
-                                      )
-                                      yCursor += p.h
-                                      return rectEl
-                                    })}
-                                  </g>
-                                )
-                              })() : (
-                                <rect
-                                  x={minutesX}
-                                  y={y}
-                                  width={minutesBarW}
-                                  height={h}
-                                  rx={1}
-                                  className={'fill-indigo-400'}
-                                  opacity={(r?.minutes?.[monthOrderIdx[i]] ?? null) == null ? 0.25 : 1}
-                                  onMouseEnter={(e) => setTooltip({ x: e.clientX + 12, y: e.clientY + 12, content: `${num}. ${(s?.name) ?? '-'} · ${monthOrderIdx[i] + 1}월 운동시간 ${typeof rawMinutesVal === 'number' ? rawMinutesVal.toFixed(1) : '-'}분${accText}` })}
-                                  onMouseMove={(e) => setTooltip((prev) => (prev ? { ...prev, x: e.clientX + 12, y: e.clientY + 12 } : prev))}
-                                  onMouseLeave={() => setTooltip(null)}
-                                />
-                              )}
-                              {category !== 'all' && (() => {
-                                const acc = accVal
-                                if (typeof acc !== 'number') return null
-                                const accClamped = Math.max(0, Math.min(100, acc))
-                                const capH = Math.round(h * (accClamped / 100))
-                                const capY = height - 3 - capH
-                                return (
-                                  <rect
-                                    x={minutesX}
-                                    y={capY}
-                                    width={minutesBarW}
-                                    height={capH}
-                                    rx={1}
-                                    className={'fill-teal-600'}
-                                    pointerEvents="none"
-                                  />
-                                )
-                              })()}
-                              <rect
-                                x={calX}
-                                y={height - 3 - calH}
-                                width={calBarW}
-                                height={calH}
-                                rx={1}
-                                className={'fill-yellow-500'}
-                                opacity={(r?.calories?.[monthOrderIdx[i]] ?? null) == null ? 0.25 : 1}
-                                onMouseEnter={(e) => setTooltip({ x: e.clientX + 12, y: e.clientY + 12, content: `${num}. ${(s?.name) ?? '-'} · ${monthOrderIdx[i] + 1}월 칼로리 ${typeof calVal === 'number' ? calVal.toFixed(1) : '-'}kcal` })}
-                                onMouseMove={(e) => setTooltip((prev) => (prev ? { ...prev, x: e.clientX + 12, y: e.clientY + 12 } : prev))}
-                                onMouseLeave={() => setTooltip(null)}
-                              />
-                            </g>
-                          )
-                        })}
-                        <line x1="8" y1={height - 3} x2={width - 8} y2={height - 3} stroke="#E5E7EB" strokeWidth="1" />
-                      </svg>
-                      <div className="mt-1 grid grid-cols-12 gap-1">
-                        {months.map((m, i) => (
-                          <div key={`${contentKey}-${i}`} className={`text-[10px] text-center text-gray-400`}>{monthOrderIdx[i] + 1}</div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 오른쪽: 심박수 라인 차트 */}
-                    <div>
-                      <div className="mb-1 text-xs text-gray-600 flex items-center gap-3">
-                        <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-1 bg-indigo-500" /> 평균 bpm</span>
-                        <span className="flex items-center gap-1 text-[11px] text-gray-600"><span className="inline-block w-3 h-1 bg-rose-500" /> 최대 bpm</span>
-                      </div>
-                      <svg width={width} height={height} className="block">
-                        <line x1="8" y1={height - 3} x2={width - 8} y2={height - 3} stroke="#E5E7EB" strokeWidth="1" />
-                        {avgData.map((v: number, i: number) => {
-                          if (i === 0) return null
-                          const prev = avgDataRawOrdered[i - 1]
-                          const curr = avgDataRawOrdered[i]
-                          if (prev == null || curr == null) return null
-                          const x1 = 12 + (i - 1) * (barW + gap) + barW / 2
-                          const x2 = 12 + i * (barW + gap) + barW / 2
-                          const y1 = height - 3 - Math.round((avgData[i - 1] / bpmMax) * (height - 6))
-                          const y2 = height - 3 - Math.round((avgData[i] / bpmMax) * (height - 6))
-                          return <line key={`avg-b-${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#6366F1" strokeWidth="2" />
-                        })}
-                        {maxData.map((v: number, i: number) => {
-                          if (i === 0) return null
-                          const prev = maxDataRawOrdered[i - 1]
-                          const curr = maxDataRawOrdered[i]
-                          if (prev == null || curr == null) return null
-                          const x1 = 12 + (i - 1) * (barW + gap) + barW / 2
-                          const x2 = 12 + i * (barW + gap) + barW / 2
-                          const y1 = height - 3 - Math.round((maxData[i - 1] / bpmMax) * (height - 6))
-                          const y2 = height - 3 - Math.round((maxData[i] / bpmMax) * (height - 6))
-                          return <line key={`max-b-${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#F43F5E" strokeWidth="2" />
-                        })}
-                        {avgDataRawOrdered.map((v: number | null, i: number) => {
-                          if (v == null) return null
-                          const cx = 12 + i * (barW + gap) + barW / 2
-                          const cy = height - 3 - Math.round(((avgData[i] || 0) / bpmMax) * (height - 6))
-                          return (
-                            <circle
-                              key={`avgpb-${i}`}
-                              cx={cx}
-                              cy={cy}
-                              r={2}
-                              fill="#6366F1"
-                              onMouseEnter={(e) => setTooltip({ x: e.clientX + 12, y: e.clientY + 12, content: `${num}. ${(s?.name) ?? '-'} · ${monthOrderIdx[i] + 1}월 평균 ${avgData[i]}` })}
-                              onMouseMove={(e) => setTooltip((prev) => (prev ? { ...prev, x: e.clientX + 12, y: e.clientY + 12 } : prev))}
-                              onMouseLeave={() => setTooltip(null)}
-                            />
-                          )
-                        })}
-                        {maxDataRawOrdered.map((v: number | null, i: number) => {
-                          if (v == null) return null
-                          const cx = 12 + i * (barW + gap) + barW / 2
-                          const cy = height - 3 - Math.round(((maxData[i] || 0) / bpmMax) * (height - 6))
-                          return (
-                            <circle
-                              key={`maxpb-${i}`}
-                              cx={cx}
-                              cy={cy}
-                              r={2}
-                              fill="#F43F5E"
-                              onMouseEnter={(e) => setTooltip({ x: e.clientX + 12, y: e.clientY + 12, content: `${num}. ${(s?.name) ?? '-'} · ${monthOrderIdx[i] + 1}월 최대 ${maxData[i]}` })}
-                              onMouseMove={(e) => setTooltip((prev) => (prev ? { ...prev, x: e.clientX + 12, y: e.clientY + 12 } : prev))}
-                              onMouseLeave={() => setTooltip(null)}
-                            />
-                          )
-                        })}
-                        {/* 월별 히트박스: 심박수 호버 영역 확대 */}
-                        {Array.from({ length: 12 }).map((_, i) => {
-                          const x = 12 + i * (barW + gap)
-                          return (
-                            <rect
-                              key={`hr-hit-${i}`}
-                              x={x}
-                              y={0}
-                              width={barW}
-                              height={height}
-                              fill="transparent"
-                              onMouseEnter={(e) => setTooltip({ x: e.clientX + 12, y: e.clientY + 12, content: `${num}. ${(s?.name) ?? '-'} · ${monthOrderIdx[i] + 1}월 평균 ${avgData[i]} / 최대 ${maxData[i]}` })}
-                              onMouseMove={(e) => setTooltip((prev) => (prev ? { ...prev, x: e.clientX + 12, y: e.clientY + 12 } : prev))}
-                              onMouseLeave={() => setTooltip(null)}
-                            />
-                          )
-                        })}
-                      </svg>
-                      <div className="mt-1 grid grid-cols-12 gap-1">
-                        {months.map((m, i) => (
-                          <div key={i} className="text-[10px] text-center text-gray-400">{monthOrderIdx[i] + 1}</div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  {tooltip && (
-                    <div
-                      className="pointer-events-none fixed z-50 rounded bg-black/80 px-2 py-1 text-[11px] text-white"
-                      style={{ left: tooltip.x, top: tooltip.y }}
-                    >
-                      {tooltip.content}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+          {exportError && <ExerciseError message={exportError} retry={exportRecords} />}
+          {!filtered.length ? <p className="p-8 text-center text-sm text-muted-foreground">{query ? '검색 결과가 없습니다.' : '등록된 학생이 없습니다.'}</p> : view === 'data' ? <ExerciseTable rows={pageRows} year={year} metric={metric} allMetrics={allMetrics} /> : <div className="divide-y divide-[#201e1d]/18">{pageRows.map(row => <section key={row.student_id} className="p-5">
+            <h3 className="mb-3 text-sm font-bold">{row.student_no}번 {row.name}</h3>
+            <div className="grid min-w-0 gap-6 xl:grid-cols-2"><div className="min-w-0"><ExerciseLegend metric={metric} /><MonthlyExerciseChart rows={[row]} year={year} metric={metric} category={String(category)} height={190} /></div><div className="min-w-0"><ExerciseLegend metric={metric === 'bpm' ? 'minutes' : 'bpm'} /><MonthlyExerciseChart rows={[row]} year={year} metric={metric === 'bpm' ? 'minutes' : 'bpm'} category={String(category)} height={190} /></div></div>
+          </section>)}</div>}
+          <ExercisePagination total={filtered.length} page={currentPage} pageSize={pageSize} onPage={setPage} onPageSize={value => { setPageSize(value); resetPage() }} />
+        </section>
+      </>}
     </div>
-  )
+  </div>
 }
-

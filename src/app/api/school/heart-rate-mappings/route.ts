@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import { validateHeartRateMappingSnapshot } from '@/lib/heartRateMapping'
 import { supabaseAdmin } from '@/lib/supabase'
 
 async function getOperatorFromRequest(request: NextRequest) {
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
       .from('school_heart_rate_mappings')
       .select('student_no, device_id')
       .eq('school_id', schoolId)
+      .neq('device_id', '')
       .order('student_no', { ascending: true })
 
     if (mappingsError) {
@@ -93,44 +95,39 @@ export async function POST(request: NextRequest) {
 
   try {
     // 요청 본문 파싱
-    const body = await request.json()
-    const { mappings } = body
-
-    if (!Array.isArray(mappings)) {
-      return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 })
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: '요청 본문이 올바른 JSON이 아닙니다.' }, { status: 400 })
     }
 
-    // 기존 매핑 데이터 삭제
-    const { error: deleteError } = await supabaseAdmin
-      .from('school_heart_rate_mappings')
-      .delete()
-      .eq('school_id', schoolId)
-
-    if (deleteError) {
-      console.error('Error deleting old mappings:', deleteError)
-      return NextResponse.json({ error: '기존 매핑 삭제 실패' }, { status: 500 })
+    const mappings = body && typeof body === 'object' && !Array.isArray(body)
+      ? (body as Record<string, unknown>).mappings
+      : undefined
+    const validation = validateHeartRateMappingSnapshot(mappings)
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    // 새로운 매핑 데이터 삽입 (빈 device_id는 제외)
-    const insertData = mappings
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((m: any) => m.device_id && String(m.device_id).trim() !== '')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((m: any) => ({
+    // 1~30 전체 슬롯을 한 SQL 문으로 갱신한다. 빈 문자열은 미배정 슬롯을 뜻한다.
+    // delete-then-insert를 사용하지 않아 요청 실패 시 기존 배정표가 사라지지 않는다.
+    const upsertData = validation.mappings
+      .slice()
+      .sort((left, right) => left.student_no - right.student_no)
+      .map((mapping) => ({
         school_id: schoolId,
-        student_no: Number(m.student_no),
-        device_id: String(m.device_id).trim(),
+        student_no: mapping.student_no,
+        device_id: mapping.device_id,
       }))
 
-    if (insertData.length > 0) {
-      const { error: insertError } = await supabaseAdmin
-        .from('school_heart_rate_mappings')
-        .insert(insertData)
+    const { error: upsertError } = await supabaseAdmin
+      .from('school_heart_rate_mappings')
+      .upsert(upsertData, { onConflict: 'school_id,student_no' })
 
-      if (insertError) {
-        console.error('Error inserting new mappings:', insertError)
-        return NextResponse.json({ error: '매핑 데이터 저장 실패' }, { status: 500 })
-      }
+    if (upsertError) {
+      console.error('Error saving heart rate mappings:', upsertError)
+      return NextResponse.json({ error: '매핑 데이터 저장 실패' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

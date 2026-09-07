@@ -1,8 +1,18 @@
 'use client'
+import { PageHeader } from '@/components/console/page-header'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 
-type ConnectionState = 'connecting' | 'open' | 'closed' | 'error' | 'idle' | 'app_launched'
+type ConnectionState =
+  | 'connecting'
+  | 'open'
+  | 'closed'
+  | 'error'
+  | 'idle'
+  | 'app_launched'
 
 const BRIDGE_URL = 'ws://localhost:8888'
 
@@ -26,7 +36,7 @@ function fmtTime(iso?: string | null) {
   return d.toLocaleString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   })
 }
 
@@ -50,15 +60,17 @@ export default function HeartRateTestPage() {
   const [currentBpm, setCurrentBpm] = useState<number | null>(null)
   const [lastTs, setLastTs] = useState<string | null>(null)
 
-  const [samples, setSamples] = useState<Array<{
-    ts: string;
-    bpm: number | null;
-    tech?: string;
-    sensor_id?: string;
-    battery_percent?: number | null;
-    rssi?: number | null;
-    raw: string
-  }>>([])
+  const [samples, setSamples] = useState<
+    Array<{
+      ts: string
+      bpm: number | null
+      tech?: string
+      sensor_id?: string
+      battery_percent?: number | null
+      rssi?: number | null
+      raw: string
+    }>
+  >([])
 
   const [filterTech, setFilterTech] = useState<'all' | 'ANT' | 'BLE'>('all')
   const [filterSensor, setFilterSensor] = useState<string>('')
@@ -78,7 +90,7 @@ export default function HeartRateTestPage() {
       // 1. 학생 정보 조회
       const currentYear = new Date().getFullYear()
       const studentsRes = await fetch(
-        `/api/school/students?year=${currentYear}&grade=${selectedGrade}&class_no=${selectedClass}`
+        `/api/school/students?year=${currentYear}&grade=${selectedGrade}&class_no=${selectedClass}`,
       )
       if (!studentsRes.ok) {
         throw new Error('학생 정보 조회 실패')
@@ -97,7 +109,9 @@ export default function HeartRateTestPage() {
       // 3. 학생 데이터 구성 (1~30번)
       const studentMappings: StudentMapping[] = []
       for (let i = 1; i <= 30; i++) {
-        const student = students.find((s: { student_no: number; name?: string }) => s.student_no === i)
+        const student = students.find(
+          (s: { student_no: number; name?: string }) => s.student_no === i,
+        )
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapping = mappings.find((m: any) => m.student_no === i)
 
@@ -105,7 +119,7 @@ export default function HeartRateTestPage() {
           studentMappings.push({
             no: i,
             name: student.name || `학생 ${i}`,
-            device_id: mapping.device_id
+            device_id: mapping.device_id,
           })
         }
       }
@@ -114,15 +128,19 @@ export default function HeartRateTestPage() {
       const classData: ClassData = {
         grade: selectedGrade,
         class_no: selectedClass,
-        students: studentMappings
+        students: studentMappings,
       }
 
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({
-          command: 'set_class_data',
-          data: classData
-        }))
-        setStatusText(`${selectedGrade}학년 ${selectedClass}반 정보 전송 완료 (${studentMappings.length}명)`)
+        wsRef.current.send(
+          JSON.stringify({
+            command: 'set_class_data',
+            data: classData,
+          }),
+        )
+        setStatusText(
+          `${selectedGrade}학년 ${selectedClass}반 정보 전송 완료 (${studentMappings.length}명)`,
+        )
       } else {
         setStatusText('앱이 연결되지 않았습니다')
       }
@@ -226,7 +244,7 @@ export default function HeartRateTestPage() {
     }
 
     ws.onclose = () => {
-      // 중요: 연결 시도 중(connecting)이거나 앱 실행 시퀀스 중에는 
+      // 중요: 연결 시도 중(connecting)이거나 앱 실행 시퀀스 중에는
       // 개별 소켓의 닫힘 이벤트를 무시합니다. (성급한 '연결 종료' 안내 방지)
       // 최종 결과는 12초 타임아웃 타이머(retryTimerRef)에서 결정됩니다.
       if (wsRef.current === ws) {
@@ -321,10 +339,10 @@ export default function HeartRateTestPage() {
           bpm: data.heartRate,
           tech: 'ANT',
           sensor_id: 'ANT+',
-          raw: `ANT+ HR=${data.heartRate}`
+          raw: `ANT+ HR=${data.heartRate}`,
         }
 
-        setSamples(prev => [sample, ...prev].slice(0, 200))
+        setSamples((prev) => [sample, ...prev].slice(0, 200))
         setCurrentBpm(data.heartRate)
         setLastTs(sample.ts)
       }
@@ -337,10 +355,10 @@ export default function HeartRateTestPage() {
           tech: 'BLE',
           sensor_id: data.deviceId ? String(data.deviceId) : 'BLE',
           battery_percent: data.battery,
-          raw: `BLE HR=${data.heartRate}${data.battery ? ` Bat=${data.battery}%` : ''}`
+          raw: `BLE HR=${data.heartRate}${data.battery ? ` Bat=${data.battery}%` : ''}`,
         }
 
-        setSamples(prev => [sample, ...prev].slice(0, 200))
+        setSamples((prev) => [sample, ...prev].slice(0, 200))
         setCurrentBpm(data.heartRate)
         setLastTs(sample.ts)
       }
@@ -355,10 +373,11 @@ export default function HeartRateTestPage() {
 
   // 센서별 그룹화
   const groupedSensorsMap = useMemo(() => {
-    const map = new Map<string, typeof samples[number]>()
+    const map = new Map<string, (typeof samples)[number]>()
     for (const s of samples) {
       const q = filterSensor.trim().toLowerCase()
-      if (filterTech !== 'all' && (s.tech || '').toUpperCase() !== filterTech) continue
+      if (filterTech !== 'all' && (s.tech || '').toUpperCase() !== filterTech)
+        continue
       if (q) {
         const hay = `${s.sensor_id || ''}`.toLowerCase()
         if (!hay.includes(q)) continue
@@ -377,13 +396,14 @@ export default function HeartRateTestPage() {
       const [, bId] = b.split('|')
       const an = Number(aId)
       const bn = Number(bId)
-      if (Number.isFinite(an) && Number.isFinite(bn) && an !== bn) return an - bn
+      if (Number.isFinite(an) && Number.isFinite(bn) && an !== bn)
+        return an - bn
       return a.localeCompare(b)
     })
   }, [groupedSensorsMap])
 
   useEffect(() => {
-    setSensorOrder(prev => {
+    setSensorOrder((prev) => {
       if (prev.length === 0) return groupedSensorsSortedKeys
       const set = new Set(prev)
       const next = [...prev]
@@ -393,7 +413,7 @@ export default function HeartRateTestPage() {
           next.push(k)
         }
       }
-      return next.filter(k => groupedSensorsMap.has(k))
+      return next.filter((k) => groupedSensorsMap.has(k))
     })
   }, [groupedSensorsSortedKeys, groupedSensorsMap])
 
@@ -405,91 +425,136 @@ export default function HeartRateTestPage() {
   }, [])
 
   return (
-    <div className="space-y-6 text-gray-900">
+    <div className="space-y-6 text-foreground">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">심박계 테스트 - Fitness Bridge</h1>
-          <p className="mt-1 text-sm text-white/80">
-            &quot;시작&quot; 버튼을 클릭하면 로컬 Fitness Bridge 서버에 연결되어 실시간 심박수 데이터를 수신합니다.
-          </p>
-        </div>
+        <PageHeader
+          title="심박계 테스트 - Fitness Bridge"
+          eyebrow="운영 관리"
+          actions={
+            <>
+              <p className="mt-1 text-sm text-muted-foreground">
+                &quot;시작&quot; 버튼을 클릭하면 로컬 Fitness Bridge 서버에
+                연결되어 실시간 심박수 데이터를 수신합니다.
+              </p>
+            </>
+          }
+        />
         <div className="flex items-center gap-3">
-          <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ${state === 'open' ? 'bg-emerald-100 text-emerald-800' :
-            state === 'connecting' ? 'bg-indigo-100 text-indigo-800' :
-              state === 'error' ? 'bg-rose-100 text-rose-800' : 'bg-gray-100 text-gray-700'
-            }`}>
-            {state === 'open' ? '✅ 연결됨' :
-              state === 'connecting' ? '🔄 연결 중...' :
-                state === 'error' ? '❌ 오류' : '⚪ 대기'}
+          <span
+            className={`inline-flex items-center px-3 py-1.5 text-xs font-semibold ${
+              state === 'open'
+                ? 'bg-accent text-foreground'
+                : state === 'connecting'
+                  ? 'bg-accent text-foreground'
+                  : state === 'error'
+                    ? 'bg-accent text-destructive'
+                    : 'bg-muted text-foreground'
+            }`}
+          >
+            {state === 'open'
+              ? '✅ 연결됨'
+              : state === 'connecting'
+                ? '🔄 연결 중...'
+                : state === 'error'
+                  ? '❌ 오류'
+                  : '⚪ 대기'}
           </span>
-          <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ${sessionActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
-            }`}>
+          <span
+            className={`inline-flex items-center px-3 py-1.5 text-xs font-semibold ${
+              sessionActive
+                ? 'bg-accent text-foreground'
+                : 'bg-muted text-foreground'
+            }`}
+          >
             세션: {sessionActive ? '🟢 활성' : '⚪ 대기'}
           </span>
         </div>
       </div>
 
       {/* 상태 및 제어 */}
-      <div className="bg-white/95 rounded-lg shadow p-6 space-y-4">
+      <div className="bg-white p-6 space-y-4 console-panel">
         {/* 학급 선택 */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-purple-900 mb-3">📚 학급 선택</h3>
+        <div className="bg-primary border border-border p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">
+            📚 학급 선택
+          </h3>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">학년:</label>
-              <select
+              <label className="text-sm font-medium text-foreground">
+                학년:
+              </label>
+              <NativeSelect
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(Number(e.target.value))}
-                className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+                className="border border-border px-3 py-1.5 text-sm"
               >
-                {[1, 2, 3, 4, 5, 6].map(g => (
-                  <option key={g} value={g}>{g}학년</option>
+                {[1, 2, 3, 4, 5, 6].map((g) => (
+                  <option key={g} value={g}>
+                    {g}학년
+                  </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">반:</label>
-              <select
+              <label className="text-sm font-medium text-foreground">반:</label>
+              <NativeSelect
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(Number(e.target.value))}
-                className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+                className="border border-border px-3 py-1.5 text-sm"
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(c => (
-                  <option key={c} value={c}>{c}반</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((c) => (
+                  <option key={c} value={c}>
+                    {c}반
+                  </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
-            <button
+            <Button
               onClick={sendClassDataToApp}
               disabled={state !== 'open'}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold ${state === 'open'
-                ? 'bg-purple-600 text-white hover:bg-purple-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+              className={`px-4 py-2 text-sm font-semibold ${
+                state === 'open'
+                  ? 'bg-primary text-white hover:bg-primary'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
+              }`}
             >
               학급 정보 전송
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* 연결 전 안내 메시지 */}
         {state === 'idle' && (
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+          <div className="bg-accent border-l-4 border-border p-4 mb-4">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-foreground"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">시작하기 전에</h3>
-                <div className="mt-2 text-sm text-blue-700">
+                <h3 className="text-sm font-medium text-foreground">
+                  시작하기 전에
+                </h3>
+                <div className="mt-2 text-sm text-foreground">
                   <p>1. Fitness Bridge 서버가 실행 중인지 확인하세요</p>
-                  <p className="mt-1 ml-4 font-mono text-xs bg-blue-100 px-2 py-1 rounded inline-block">
+                  <p className="mt-1 ml-4 font-mono text-xs bg-accent px-2 py-1 inline-block">
                     node index.js 또는 fitness-bridge.exe 실행
                   </p>
-                  <p className="mt-2">2. 허브가 Fitness Bridge에 연결되어 있는지 확인하세요</p>
-                  <p className="mt-2">3. 아래 &quot;시작&quot; 버튼을 클릭하세요</p>
+                  <p className="mt-2">
+                    2. 허브가 Fitness Bridge에 연결되어 있는지 확인하세요
+                  </p>
+                  <p className="mt-2">
+                    3. 아래 &quot;시작&quot; 버튼을 클릭하세요
+                  </p>
                 </div>
               </div>
             </div>
@@ -498,30 +563,47 @@ export default function HeartRateTestPage() {
 
         {/* 연결 실패 안내 메시지 */}
         {state === 'error' && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="bg-accent border-l-4 border-border p-4 mb-4">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-destructive"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">연결 실패</h3>
-                <div className="mt-2 text-sm text-red-700">
+                <h3 className="text-sm font-medium text-destructive">
+                  연결 실패
+                </h3>
+                <div className="mt-2 text-sm text-destructive">
                   <p>{statusText}</p>
-                  <div className="mt-3 p-3 bg-red-100/50 rounded-md border border-red-200">
-                    <p className="font-semibold text-red-900 mb-1">앱을 처음 사용하시나요?</p>
-                    <p className="text-xs text-red-800 mb-2">윈도우 전용 Fitness Bridge 앱을 설치해야 실시간 연동이 가능합니다.</p>
+                  <div className="mt-3 p-3 bg-accent/50 border border-border">
+                    <p className="font-semibold text-destructive mb-1">
+                      앱을 처음 사용하시나요?
+                    </p>
+                    <p className="text-xs text-destructive mb-2">
+                      윈도우 전용 Fitness Bridge 앱을 설치해야 실시간 연동이
+                      가능합니다.
+                    </p>
                     <a
                       href="/downloads/FitnessBridge-Portable.exe"
-                      className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition-colors shadow-sm"
+                      className="inline-flex items-center px-3 py-1.5 bg-primary text-foreground text-xs font-bold hover:bg-primary transition-colors"
                     >
                       <span>📥 Fitness Bridge 다운로드</span>
                     </a>
                   </div>
                   <p className="mt-3 font-semibold">이미 앱을 설치했다면:</p>
                   <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li>브라우저 팝업에서 &quot;열기&quot;를 허용했는지 확인</li>
+                    <li>
+                      브라우저 팝업에서 &quot;열기&quot;를 허용했는지 확인
+                    </li>
                     <li>사용 중인 백신/방화벽이 앱을 차단하는지 확인</li>
                   </ul>
                 </div>
@@ -531,68 +613,84 @@ export default function HeartRateTestPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg">
-            <div className="text-sm font-semibold text-indigo-700 mb-1">현재 심박수</div>
-            <div className="text-4xl font-bold text-indigo-900">
+          <div className="text-center p-4 bg-primary">
+            <div className="text-sm font-semibold text-foreground mb-1">
+              현재 심박수
+            </div>
+            <div className="text-4xl font-bold text-foreground">
               {currentBpm ? `${currentBpm}` : '-'}
               {currentBpm && <span className="text-lg ml-1">BPM</span>}
             </div>
           </div>
-          <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-            <div className="text-sm font-semibold text-purple-700 mb-1">수신 데이터</div>
-            <div className="text-4xl font-bold text-purple-900">{samples.length}</div>
+          <div className="text-center p-4 bg-primary">
+            <div className="text-sm font-semibold text-foreground mb-1">
+              수신 데이터
+            </div>
+            <div className="text-4xl font-bold text-foreground">
+              {samples.length}
+            </div>
           </div>
-          <div className="text-center p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg">
-            <div className="text-sm font-semibold text-pink-700 mb-1">마지막 업데이트</div>
-            <div className="text-lg font-medium text-pink-900">{fmtTime(lastTs)}</div>
+          <div className="text-center p-4 bg-primary">
+            <div className="text-sm font-semibold text-foreground mb-1">
+              마지막 업데이트
+            </div>
+            <div className="text-lg font-medium text-foreground">
+              {fmtTime(lastTs)}
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-          <div className="text-sm text-gray-600">
-            {statusText}
-          </div>
+        <div className="flex justify-between items-center pt-2 border-t border-border">
+          <div className="text-sm text-muted-foreground">{statusText}</div>
           <div className="flex gap-2">
             {state === 'idle' && (
-              <button
+              <Button
                 onClick={launchApp}
-                className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold hover:from-indigo-700 hover:to-purple-700 shadow-lg active:scale-95 transition-all"
+                variant="outline"
+                className="px-8 py-2.5 text-sm font-bold active:scale-95 transition-all"
               >
                 시작
-              </button>
+              </Button>
             )}
 
-            {(state === 'app_launched' || state === 'error' || state === 'closed') && (
-              <button
+            {(state === 'app_launched' ||
+              state === 'error' ||
+              state === 'closed') && (
+              <Button
                 onClick={() => connect()}
-                className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white text-sm font-bold hover:from-green-700 hover:to-emerald-700 shadow-lg active:scale-95 transition-all"
+                variant="default"
+                className="px-8 py-2.5 text-sm font-bold active:scale-95 transition-all"
               >
                 측정 시작
-              </button>
+              </Button>
             )}
 
             {state === 'connecting' && (
-              <button
+              <Button
                 disabled
-                className="px-8 py-2.5 rounded-lg bg-gray-400 text-white text-sm font-bold cursor-not-allowed shadow-md animate-pulse"
+                variant="outline"
+                className="px-8 py-2.5 text-sm font-bold cursor-not-allowed animate-pulse"
               >
                 연결 중...
-              </button>
+              </Button>
             )}
 
             {state === 'open' && (
               <div className="flex items-center gap-3">
                 <span className="flex h-3 w-3 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex h-3 w-3 bg-primary"></span>
                 </span>
-                <span className="text-sm font-semibold text-red-600 mr-2">측정 중</span>
-                <button
+                <span className="text-sm font-semibold text-destructive mr-2">
+                  측정 중
+                </span>
+                <Button
                   onClick={disconnect}
-                  className="px-6 py-2 rounded-lg bg-gray-800 text-white text-sm font-bold hover:bg-black shadow-md transition-colors"
+                  variant="outline"
+                  className="px-6 py-2 text-sm font-bold transition-colors"
                 >
                   중지
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -600,41 +698,49 @@ export default function HeartRateTestPage() {
       </div>
 
       {/* 센서 데이터 테이블 */}
-      <div className="bg-white/95 rounded-lg shadow p-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">수신 데이터</h2>
+      <div className="bg-white p-6 console-panel">
+        <h2 className="text-base font-semibold text-foreground mb-4">
+          수신 데이터
+        </h2>
 
         <div className="mb-4 flex gap-4 text-sm">
           <label className="flex items-center gap-2">
-            <span className="font-semibold text-gray-700">필터:</span>
-            <select
+            <span className="font-semibold text-foreground">필터:</span>
+            <NativeSelect
               value={filterTech}
-              onChange={e => setFilterTech(e.target.value as 'all' | 'ANT' | 'BLE')}
-              className="border-gray-300 rounded h-8 text-xs"
+              onChange={(e) =>
+                setFilterTech(e.target.value as 'all' | 'ANT' | 'BLE')
+              }
+              className="border-border h-8 text-xs"
             >
               <option value="all">전체</option>
               <option value="ANT">ANT+</option>
               <option value="BLE">BLE</option>
-            </select>
+            </NativeSelect>
           </label>
-          <input
+          <Input
             value={filterSensor}
-            onChange={e => setFilterSensor(e.target.value)}
+            onChange={(e) => setFilterSensor(e.target.value)}
             placeholder="센서 ID 검색..."
-            className="border-gray-300 rounded h-8 px-2 text-xs flex-1 max-w-xs"
+            className="border-border h-8 px-2 text-xs flex-1 max-w-xs"
           />
           <div className="ml-auto">
-            <button
+            <Button
               onClick={() => setSamples([])}
-              className="px-3 py-1 bg-gray-200 rounded text-xs hover:bg-gray-300"
+              variant="outline"
+              className="px-3 py-1 text-xs"
             >
               초기화
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="overflow-auto border border-gray-200 rounded" style={{ maxHeight: '500px' }}>
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 sticky top-0">
+        <div
+          className="overflow-auto border border-border"
+          style={{ maxHeight: '500px' }}
+        >
+          <table className="w-full text-sm text-left console-data-table">
+            <thead className="bg-muted sticky top-0">
               <tr>
                 <th className="px-3 py-2">기술</th>
                 <th className="px-3 py-2">센서 ID</th>
@@ -646,28 +752,45 @@ export default function HeartRateTestPage() {
             <tbody>
               {sensorOrder.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="p-4 text-center text-muted-foreground"
+                  >
                     데이터가 없습니다
                   </td>
                 </tr>
               ) : (
-                sensorOrder.map(k => {
+                sensorOrder.map((k) => {
                   const s = groupedSensorsMap.get(k)
                   if (!s) return null
                   return (
-                    <tr key={k} className="border-b border-gray-100 hover:bg-gray-50">
+                    <tr
+                      key={k}
+                      className="border-b border-border hover:bg-muted"
+                    >
                       <td className="px-3 py-2">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${s.tech === 'ANT' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                          }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold ${
+                            s.tech === 'ANT'
+                              ? 'bg-accent text-foreground'
+                              : 'bg-accent text-foreground'
+                          }`}
+                        >
                           {s.tech}
                         </span>
                       </td>
-                      <td className="px-3 py-2 font-mono">{fmtSensorId7(s.sensor_id)}</td>
+                      <td className="px-3 py-2 font-mono">
+                        {fmtSensorId7(s.sensor_id)}
+                      </td>
                       <td className="px-3 py-2">
-                        <span className="font-bold text-lg text-indigo-900">{s.bpm ?? '-'}</span>
+                        <span className="font-bold text-lg text-foreground">
+                          {s.bpm ?? '-'}
+                        </span>
                       </td>
                       <td className="px-3 py-2">{s.battery_percent ?? '-'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-500">{fmtTime(s.ts)}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {fmtTime(s.ts)}
+                      </td>
                     </tr>
                   )
                 })
@@ -676,8 +799,9 @@ export default function HeartRateTestPage() {
           </table>
         </div>
 
-        <div className="mt-4 text-xs text-gray-500">
-          💡 Fitness Bridge 서버가 실행 중이어야 하며, 허브가 서버에 연결되어 있어야 합니다.
+        <div className="mt-4 text-xs text-muted-foreground">
+          💡 Fitness Bridge 서버가 실행 중이어야 하며, 허브가 서버에 연결되어
+          있어야 합니다.
         </div>
       </div>
     </div>

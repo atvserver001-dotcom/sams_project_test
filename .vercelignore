@@ -1,0 +1,7 @@
+tests
+.next*
+output
+docs
+*.tsbuildinfo
+playwright*.ts
+vitest.config.ts

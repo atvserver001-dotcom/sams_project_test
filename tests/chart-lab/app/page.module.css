@@ -1,0 +1,50 @@
+.lab { color: #201e1d; min-height: 100dvh; font-family: Pretendard, sans-serif; font-size: 14px; letter-spacing: 0; }
+.lab * { box-sizing: border-box; letter-spacing: 0; }
+.header { height: 72px; display: flex; align-items: center; gap: 24px; padding: 0 28px; border-bottom: 2px solid #201e1d66; background: #fff; }
+.header img { flex-shrink: 0; object-fit: contain; }
+.header h1 { font-size: 20px; font-weight: 800; margin: 0; }
+.badge { color: #ae1800; background: #fff2ef; border: 1px solid #ec30134d; padding: 4px 8px; font-size: 12px; white-space: nowrap; }
+.candidate { margin-left: auto; color: #605d5d; font-size: 12px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; min-height: 76px; padding: 14px 28px; background: #fff; border-bottom: 1px solid #201e1d66; }
+.toolbar label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #605d5d; }
+.toolbar select { height: 36px; color: #201e1d; font-weight: 600; border: 1px solid #201e1d66; background: #f3f2f2; padding: 0 28px 0 10px; }
+.tabs { display: flex; border: 1px solid #201e1d66; }
+.tabs button { height: 36px; min-width: 100px; padding: 0 16px; font-weight: 700; font-size: 13px; }
+.tabs button[aria-selected='true'] { color: #fff; background: #ec3013; }
+.iconButton { width: 36px; height: 36px; display: inline-flex; flex: 0 0 36px; align-items: center; justify-content: center; border: 1px solid #201e1d66; background: #fff; }
+.outlineButton { height: 36px; padding: 0 12px; font-size: 12px; font-weight: 600; border: 1px solid #201e1d66; background: #fff; }
+.transport { display: flex; gap: 4px; }
+.lab button { cursor: pointer; }
+.lab button:disabled { cursor: default; opacity: .4; }
+.lab :is(button, select, summary):focus-visible { outline: 2px solid #ec3013; outline-offset: 3px; }
+.lab button:hover:not(:disabled):not([aria-selected='true']) { background: #fff2ef; }
+.meta { font-size: 12px; color: #605d5d; }
+.elapsed { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; width: 64px; }
+.content { padding: 24px 28px; }
+.content h2 { font-size: 15px; font-weight: 800; margin: 0 0 16px; }
+.chartRow { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+.chartTool { min-width: 0; background: white; border: 1px solid #201e1d66; padding: 20px; }
+.chartTool h2 { margin-bottom: 16px; }
+.dataSection { margin-top: 28px; }
+.tableViewport { width: 100%; max-height: 500px; overflow: auto; border-top: 2px solid #201e1d66; }
+.lab table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; background: #fff; white-space: nowrap; }
+.lab thead { position: sticky; top: 0; background: #eae9e9; }
+.lab th, .lab td { text-align: right; padding: 8px 14px; height: 36px; border-bottom: 1px solid #201e1d2e; }
+.lab thead th { font-size: 12px; font-weight: 700; }
+.lab tr > :first-child { text-align: left; }
+.raw { margin-top: 18px; }
+.raw summary { cursor: pointer; padding: 10px 0; color: #605d5d; font-size: 13px; font-weight: 600; }
+.liveHeading { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; }
+.liveHeading h2 { margin: 0; margin-right: auto; }
+.liveGrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.liveGrid > button { min-width: 0; height: 120px; display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; background: #fff; border: 1px solid #201e1d66; overflow: hidden; }
+.liveGrid > button[aria-pressed='true'] { box-shadow: inset 0 0 0 2px #ec3013; }
+.studentLabel { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; font-size: 12px; white-space: nowrap; }
+.studentLabel strong { overflow: hidden; text-overflow: ellipsis; }
+.studentLabel b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.studentLabel small { font-size: 10px; color: #605d5d; font-weight: 400; }
+.focus { margin-top: 24px; border-top: 2px solid #201e1d66; padding-top: 20px; }
+.focus > svg { width: 100%; height: 380px; background: #fff; }
+@media (max-width: 1100px) { .liveGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .header { height: auto; min-height: 72px; flex-wrap: wrap; padding: 14px 16px; gap: 10px; }.header img { width: 100px; }.header h1 { font-size: 18px; }.candidate { margin-left: 0; }.toolbar { padding: 14px 16px; gap: 12px; }.content { padding: 16px; }.chartRow { grid-template-columns: minmax(0, 1fr); }.chartTool { padding: 14px; }.liveGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.liveGrid > button { padding: 8px; }.studentLabel { white-space: normal; }.studentLabel b { font-size: 16px; }.focus > svg { height: auto; aspect-ratio: 480 / 380; } }
+@media (prefers-reduced-motion: reduce) { .lab * { animation: none !important; transition: none !important; } }

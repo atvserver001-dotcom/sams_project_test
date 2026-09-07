@@ -1,6 +1,18 @@
 "use client"
 
 import React, { useEffect, useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { RecordSelect } from '@/components/school-records/record-select'
+import { Label } from '@/components/ui/label'
+import { PageHeader } from '@/components/console/page-header'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { FilterBar } from '@/components/console/filter-bar'
+import { ClassFilterFields } from '@/components/console/class-filter-fields'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Download, Printer, UserRound, UsersRound } from 'lucide-react'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { renderPersonalReport, type ReportMeasurement } from '@/components/paps/personal-report'
+import { renderClassReport, type ClassReportMeasurement } from '@/components/paps/class-report'
 import * as XLSX from 'xlsx'
 
 type Gender = 'M' | 'F'
@@ -111,34 +123,11 @@ function getBmiResult(initialScore: number): { gradeNo: number; score: number; l
 }
 
 function gradeColor(gradeNo: number): string {
-  const colors: Record<number, string> = {
-    1: 'bg-blue-100 text-blue-800',
-    2: 'bg-green-100 text-green-800',
-    3: 'bg-yellow-100 text-yellow-800',
-    4: 'bg-orange-100 text-orange-800',
-    5: 'bg-red-100 text-red-800',
-  }
-  return colors[gradeNo] ?? 'bg-gray-100 text-gray-800'
+  return gradeNo >= 4 ? 'border border-border bg-muted text-foreground' : 'border border-border bg-card text-foreground'
 }
 
 function gradeTextColor(gradeNo: number): string {
-  const colors: Record<number, string> = {
-    1: 'text-blue-700',
-    2: 'text-green-700',
-    3: 'text-yellow-700',
-    4: 'text-orange-700',
-    5: 'text-red-700',
-  }
-  return colors[gradeNo] ?? 'text-gray-700'
-}
-
-// 심폐지구력 합산 계산 헬퍼
-function getCardioSum(row: PapsRow, idx: number): number | null {
-  const c1 = row.cardio_1min[idx]
-  const c2 = row.cardio_2min[idx]
-  const c3 = row.cardio_3min[idx]
-  if (c1 === null && c2 === null && c3 === null) return null
-  return (c1 ?? 0) + (c2 ?? 0) + (c3 ?? 0)
+  return gradeNo >= 4 ? 'text-destructive' : 'text-foreground'
 }
 
 // PEI (Physical Efficiency Index) 계산
@@ -338,6 +327,7 @@ export default function PapsPage() {
   const recordFields: {
     key: string;
     label: string;
+    unit: string;
     bgClass: string;
     textClass: string;
     render: (row: PapsRow, origIdx: number) => React.ReactNode
@@ -345,24 +335,26 @@ export default function PapsPage() {
       {
         key: 'muscular_endurance',
         label: '근지구력',
-        bgClass: 'bg-indigo-50',
-        textClass: 'text-indigo-700',
+        unit: '회',
+        bgClass: 'bg-card',
+        textClass: 'text-muted-foreground',
         render: (r, i) => r.muscular_endurance[i] !== null ? Math.round(Number(r.muscular_endurance[i])) : '-'
       },
       {
         key: 'power',
         label: '순발력',
-        bgClass: 'bg-rose-50',
-        textClass: 'text-rose-700',
+        unit: 'cm',
+        bgClass: 'bg-card',
+        textClass: 'text-muted-foreground',
         render: (r, i) => {
           const v1 = r.power_1[i]
           const v2 = r.power_2[i]
           if (v1 === null && v2 === null) return '-'
           return (
-            <div className="flex flex-col text-[12px] font-medium leading-normal">
-              <span>{v1 !== null ? Number(v1).toFixed(2) : '-'}</span>
-              <div className="h-[1px] w-full bg-rose-200/50 my-0.5" />
-              <span>{v2 !== null ? Number(v2).toFixed(2) : '-'}</span>
+            <div className="flex flex-col text-[13px] font-normal leading-normal">
+              <span>{v1 !== null ? Number(v1).toFixed(1) : '-'}</span>
+              <div className="h-[1px] w-full bg-card my-0.5" />
+              <span>{v2 !== null ? Number(v2).toFixed(1) : '-'}</span>
             </div>
           )
         }
@@ -370,17 +362,18 @@ export default function PapsPage() {
       {
         key: 'flexibility',
         label: '유연성',
-        bgClass: 'bg-teal-50',
-        textClass: 'text-teal-700',
+        unit: 'cm',
+        bgClass: 'bg-card',
+        textClass: 'text-muted-foreground',
         render: (r, i) => {
           const v1 = r.flexibility_1[i]
           const v2 = r.flexibility_2[i]
           if (v1 === null && v2 === null) return '-'
           return (
-            <div className="flex flex-col text-[12px] font-medium leading-normal">
-              <span>{v1 !== null ? Number(v1).toFixed(2) : '-'}</span>
-              <div className="h-[1px] w-full bg-teal-200/50 my-0.5" />
-              <span>{v2 !== null ? Number(v2).toFixed(2) : '-'}</span>
+            <div className="flex flex-col text-[13px] font-normal leading-normal">
+              <span>{v1 !== null ? Number(v1).toFixed(1) : '-'}</span>
+              <div className="h-[1px] w-full bg-card my-0.5" />
+              <span>{v2 !== null ? Number(v2).toFixed(1) : '-'}</span>
             </div>
           )
         }
@@ -388,8 +381,9 @@ export default function PapsPage() {
       {
         key: 'cardio_pei',
         label: '심폐지구력',
-        bgClass: 'bg-amber-50',
-        textClass: 'text-amber-700',
+        unit: 'PEI',
+        bgClass: 'bg-card',
+        textClass: 'text-muted-foreground',
         render: (r, i) => {
           const student = students.find(s => s.id === r.student_id)
           const pei = getCardioPEI(r, i, schoolType, student?.gender ?? null)
@@ -399,17 +393,18 @@ export default function PapsPage() {
       {
         key: 'bmi',
         label: '체질량지수',
-        bgClass: 'bg-violet-50',
-        textClass: 'text-violet-700',
-        render: (r, i) => r.bmi[i] !== null ? Number(r.bmi[i]).toFixed(2) : '-'
+        unit: 'kg/m²',
+        bgClass: 'bg-card',
+        textClass: 'text-muted-foreground',
+        render: (r, i) => r.bmi[i] !== null ? Number(r.bmi[i]).toFixed(1) : '-'
       },
     ]
 
   // 등급 계산용 필드 (exerciseId 기준)
   const gradeFields: { key: string; label: string; bgClass: string; textClass: string; exerciseId: number; getValue: (row: PapsRow, origIdx: number) => number | null }[] = [
-    { key: 'muscular_endurance', label: '근지구력', bgClass: 'bg-indigo-50', textClass: 'text-indigo-700', exerciseId: 1, getValue: (r, i) => r.muscular_endurance[i] },
+    { key: 'muscular_endurance', label: '근지구력', bgClass: 'bg-card', textClass: 'text-muted-foreground', exerciseId: 1, getValue: (r, i) => r.muscular_endurance[i] },
     {
-      key: 'power', label: '순발력', bgClass: 'bg-rose-50', textClass: 'text-rose-700', exerciseId: 2, getValue: (r, i) => {
+      key: 'power', label: '순발력', bgClass: 'bg-card', textClass: 'text-muted-foreground', exerciseId: 2, getValue: (r, i) => {
         // 순발력: 1회, 2회 중 더 좋은 값 사용
         const v1 = r.power_1[i]
         const v2 = r.power_2[i]
@@ -420,7 +415,7 @@ export default function PapsPage() {
       }
     },
     {
-      key: 'flexibility', label: '유연성', bgClass: 'bg-teal-50', textClass: 'text-teal-700', exerciseId: 3, getValue: (r, i) => {
+      key: 'flexibility', label: '유연성', bgClass: 'bg-card', textClass: 'text-muted-foreground', exerciseId: 3, getValue: (r, i) => {
         // 유연성: 1회, 2회 중 더 좋은 값 사용
         const v1 = r.flexibility_1[i]
         const v2 = r.flexibility_2[i]
@@ -431,12 +426,12 @@ export default function PapsPage() {
       }
     },
     {
-      key: 'cardio_endurance', label: '심폐지구력', bgClass: 'bg-amber-50', textClass: 'text-amber-700', exerciseId: 4, getValue: (r, i) => {
+      key: 'cardio_endurance', label: '심폐지구력', bgClass: 'bg-card', textClass: 'text-muted-foreground', exerciseId: 4, getValue: (r, i) => {
         const student = students.find(s => s.id === r.student_id)
         return getCardioPEI(r, i, schoolType, student?.gender ?? null)
       }
     },
-    { key: 'bmi', label: '체질량지수', bgClass: 'bg-violet-50', textClass: 'text-violet-700', exerciseId: 5, getValue: (r, i) => r.bmi[i] },
+    { key: 'bmi', label: '체질량지수', bgClass: 'bg-card', textClass: 'text-muted-foreground', exerciseId: 5, getValue: (r, i) => r.bmi[i] },
   ]
 
   // 등급 참조 행 찾기
@@ -473,309 +468,93 @@ export default function PapsPage() {
 
   // 항목별 한글 종목명 매핑 (결과지 출력용)
   const exerciseNames: Record<number, { category: string; method: string }> = {
-    1: { category: '근력 / 근지구력 평가', method: '윗몸말아올리기' },
-    2: { category: '순발력 평가', method: '제자리 멀리뛰기' },
-    3: { category: '유연성 평가', method: '앉아 윗몸 앞으로 굽히기' },
+    1: { category: '근력 / 근지구력 평가', method: '윗몸말아올리기 (회)' },
+    2: { category: '순발력 평가', method: '제자리 멀리뛰기 (cm)' },
+    3: { category: '유연성 평가', method: '앉아 윗몸 앞으로 굽히기 (cm)' },
     4: { category: '심폐지구력 평가', method: '스텝검사' },
-    5: { category: '체지방 평가', method: '체질량지수 (BMI)' },
-  }
-
-  const gradeEmoji = (g: number) => {
-    const map: Record<number, { emoji: string; label: string }> = {
-      1: { emoji: '😄', label: '매우 우수' },
-      2: { emoji: '🙂', label: '양호' },
-      3: { emoji: '🙂', label: '양호' },
-      4: { emoji: '😐', label: '우려' },
-      5: { emoji: '😟', label: '위험' },
-    }
-    return map[g] ?? { emoji: '❓', label: '-' }
+    5: { category: '체지방 평가', method: '체질량지수 (kg/m²)' },
   }
 
   // 결과지 출력 핸들러
   const handlePrintStudent = (studentNo: number, selectedOrigIdx?: number) => {
     const student = students.find(s => s.student_no === studentNo) || null
     const record = rows.find(r => r.student_no === studentNo) || null
-    const origIdx = selectedOrigIdx !== undefined ? selectedOrigIdx : 2 // 기본값 3월
+    const origIdx = selectedOrigIdx !== undefined ? selectedOrigIdx : 2
 
     const gender = student?.gender ?? null
     const genderLabel = gender === 'M' ? '남' : gender === 'F' ? '여' : '-'
-    const heightCm = student?.height_cm ?? '-'
-    const weightKg = student?.weight_kg ?? '-'
+    const formatMeasurement = (value: number | null | undefined, digits = 1) =>
+      value == null ? '-' : Number(value).toFixed(digits)
 
-    // 5개 항목별 등급/점수 계산
     const itemResults = gradeFields.map(field => {
       const ref = findGradeRef(field.exerciseId, grade, gender)
-      const v = field.exerciseId === 4
-        ? getCardioPEI(record as PapsRow, origIdx, schoolType, gender)
-        : field.getValue(record as PapsRow, origIdx)
-      if (v === null || v === undefined || !ref) return { exerciseId: field.exerciseId, rawValue: v, result: null, label: '-' }
-
-      const res = calcGradeAndScore(Number(v), ref)
-      if (!res) return { exerciseId: field.exerciseId, rawValue: v, result: null, label: '-' }
-
+      const value = record ? field.getValue(record, origIdx) : null
+      const result = value == null || !ref ? null : calcGradeAndScore(Number(value), ref)
+      if (!result) return { exerciseId: field.exerciseId, rawValue: value, result: null, label: '-' }
       if (field.exerciseId === 5) {
-        const bmi = getBmiResult(res.score)
-        return { exerciseId: field.exerciseId, rawValue: v, result: { gradeNo: bmi.gradeNo, score: bmi.score }, label: bmi.label }
+        const bmi = getBmiResult(result.score)
+        return { exerciseId: field.exerciseId, rawValue: value, result: bmi, label: bmi.label }
       }
-      return { exerciseId: field.exerciseId, rawValue: v, result: res, label: `${res.gradeNo}등급` }
+      return { exerciseId: field.exerciseId, rawValue: value, result, label: `${result.gradeNo}등급` }
     })
 
-    const totalScore = itemResults.reduce((sum, item) => {
-      return sum + (item.result?.score ?? 0)
-    }, 0)
-    const hasAnyData = itemResults.some(item => item.result !== null)
-
-    const finalGrade = !hasAnyData ? 5
+    // A partial record is not a completed assessment with the absent scores set to zero.
+    const complete = itemResults.every(item => item.result !== null)
+    const totalScore = complete
+      ? itemResults.reduce((sum, item) => sum + item.result!.score, 0)
+      : null
+    const finalGrade = totalScore === null ? null
       : totalScore < 20 ? 5
         : totalScore < 40 ? 4
           : totalScore < 60 ? 3
-            : totalScore < 80 ? 2
-              : 1
+            : totalScore < 80 ? 2 : 1
+    const power = itemResults.find(item => item.exerciseId === 2)?.result
+    const cardio = itemResults.find(item => item.exerciseId === 4)?.result
+    const bmi = itemResults.find(item => item.exerciseId === 5)?.result
 
-    const gradeColorPrint = (g: number) => {
-      const map: Record<number, string> = {
-        1: '#2563eb', 2: '#16a34a', 3: '#ca8a04', 4: '#ea580c', 5: '#dc2626'
-      }
-      return map[g] ?? '#6b7280'
-    }
-
-    const gradeBgPrint = (g: number) => {
-      const map: Record<number, string> = {
-        1: '#dbeafe', 2: '#dcfce7', 3: '#fef9c3', 4: '#ffedd5', 5: '#fee2e2'
-      }
-      return map[g] ?? '#f3f4f6'
-    }
-
-    // 순발력/유연성 개별 값, 심폐지구력 개별 값
-    const power1Val = record?.power_1[origIdx]
-    const power2Val = record?.power_2[origIdx]
-    const flex1Val = record?.flexibility_1[origIdx]
-    const flex2Val = record?.flexibility_2[origIdx]
-    const cardio1Val = record?.cardio_1min[origIdx]
-    const cardio2Val = record?.cardio_2min[origIdx]
-    const cardio3Val = record?.cardio_3min[origIdx]
-    const cardioSumVal = record ? getCardioSum(record, origIdx) : null
-    const cardioPeiVal = record ? getCardioPEI(record, origIdx, schoolType, gender) : null
-
-    const powerResult = itemResults.find(i => i.exerciseId === 2)
-    const cardioResult = itemResults.find(i => i.exerciseId === 4)
-    const bmiResult = itemResults.find(i => i.exerciseId === 5)
-    const allGrades = itemResults.map(i => i.result?.gradeNo ?? null)
-    const allHaveGrade = allGrades.every(g => g !== null)
-
-    const isSportsGifted = (powerResult?.result?.score === 20) && (cardioResult?.result?.score === 20)
-    const isHealthExcellent = allHaveGrade && allGrades.every(g => g === 1)
-    const isFitnessExcellent = cardioResult?.result?.gradeNo === 1
-    const isLowFitness = allHaveGrade && allGrades.every(g => g !== null && g >= 4)
-    const isObese = bmiResult?.result?.gradeNo !== undefined && bmiResult?.result?.gradeNo !== null && bmiResult.result.gradeNo >= 4
-
-    const greenCheck = `<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="17" fill="#22c55e"/><path d="M10 18.5l5.5 5.5L26 13" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-    const redX = `<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="17" fill="#ef4444"/><path d="M12 12l12 12M24 12l-12 12" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg>`
-    const emptyCircle = `<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="17" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5"/></svg>`
-
-    // 측정 기록 세부 표시를 위한 함수
-    const getMeasureHtml = (exerciseId: number, rawValue: number | null | undefined) => {
-      if (exerciseId === 2) {
-        // 순발력: 1회차, 2회차 가로 배치
-        return `<div class="m-val-row">
-          <div class="m-val-cell"><span class="m-cell-label">1회차</span><span class="m-cell-val">${power1Val !== null && power1Val !== undefined ? Number(power1Val).toFixed(2) : '-'}</span></div>
-          <div class="m-val-cell"><span class="m-cell-label">2회차</span><span class="m-cell-val">${power2Val !== null && power2Val !== undefined ? Number(power2Val).toFixed(2) : '-'}</span></div>
-        </div>`
-      }
-      if (exerciseId === 3) {
-        // 유연성: 1회차, 2회차 가로 배치
-        return `<div class="m-val-row">
-          <div class="m-val-cell"><span class="m-cell-label">1회차</span><span class="m-cell-val">${flex1Val !== null && flex1Val !== undefined ? Number(flex1Val).toFixed(2) : '-'}</span></div>
-          <div class="m-val-cell"><span class="m-cell-label">2회차</span><span class="m-cell-val">${flex2Val !== null && flex2Val !== undefined ? Number(flex2Val).toFixed(2) : '-'}</span></div>
-        </div>`
+    const measurement = (exerciseId: number, value: number | null): ReportMeasurement => {
+      if (exerciseId === 2 || exerciseId === 3) {
+        const first = exerciseId === 2 ? record?.power_1[origIdx] : record?.flexibility_1[origIdx]
+        const second = exerciseId === 2 ? record?.power_2[origIdx] : record?.flexibility_2[origIdx]
+        return { kind: 'paired', first: formatMeasurement(first), second: formatMeasurement(second) }
       }
       if (exerciseId === 4) {
-        // 심폐지구력(스텝검사): 좌측 PEI 기록, 우측 1~3분 심박수
-        return `
-        <div class="step-test">
-          <div class="step-left">
-            <div class="step-header">기록</div>
-            <div class="step-pei"><span class="pei-val">${cardioPeiVal !== null ? cardioPeiVal.toFixed(1) : '-'}</span><span class="pei-label">(PEI)</span></div>
-          </div>
-          <div class="step-right">
-            <div class="step-row"><span class="step-min">1분</span><span class="step-bpm">${cardio1Val ?? '-'}</span></div>
-            <div class="step-row"><span class="step-min">2분</span><span class="step-bpm">${cardio2Val ?? '-'}</span></div>
-            <div class="step-row"><span class="step-min">3분</span><span class="step-bpm">${cardio3Val ?? '-'}</span></div>
-          </div>
-        </div>`
+        return {
+          kind: 'step',
+          pei: formatMeasurement(value),
+          heartRates: [
+            formatMeasurement(record?.cardio_1min[origIdx], 0),
+            formatMeasurement(record?.cardio_2min[origIdx], 0),
+            formatMeasurement(record?.cardio_3min[origIdx], 0),
+          ],
+        }
       }
-      return `<div class="m-val">측정 기록: ${rawValue !== null && rawValue !== undefined ? (exerciseId === 5 ? Number(rawValue).toFixed(2) : Math.round(Number(rawValue))) : '-'}</div>`
+      return { kind: 'single', value: formatMeasurement(value, exerciseId === 1 ? 0 : 1) }
     }
 
-    const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>PAPS 측정 결과 - ${student?.name ?? studentNo + '번'}</title>
-<style>
-  @page { size: A4 portrait; margin: 10mm 14mm; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; width: 100%; }
-  body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; color: #1f2937; background: #fff; font-size: 13px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { display: flex; flex-direction: column; min-height: 100vh; padding: 14px 18px; }
-
-  .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; margin-bottom: 14px; border-bottom: 3px solid #e11d48; }
-  .header-logo { display: inline-block; background: #e11d48; color: #fff; font-weight: 900; font-size: 14px; padding: 5px 14px; border-radius: 6px; letter-spacing: 0.5px; }
-  .header-title { font-size: 18px; font-weight: 800; color: #e11d48; }
-  .header-school { font-size: 14px; font-weight: 700; color: #374151; }
-
-  .info-bar { display: flex; align-items: center; gap: 18px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
-  .info-no { font-size: 32px; font-weight: 900; color: #e11d48; min-width: 55px; text-align: center; line-height: 1; }
-  .info-no small { font-size: 11px; display: block; color: #9ca3af; font-weight: 500; }
-  .info-body { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; flex: 1; }
-  .info-body .col { font-size: 13px; color: #374151; }
-  .info-body .col b { font-weight: 700; }
-  .info-right { margin-left: auto; display: flex; gap: 22px; font-size: 13px; color: #374151; }
-  .info-right b { font-weight: 700; }
-
-  .cats { display: flex; flex-direction: column; gap: 0; flex: 1; }
-  .cat { flex: 1; display: flex; flex-direction: column; margin-bottom: 10px; }
-  .cat-title { font-size: 14px; font-weight: 900; color: #1f2937; border-left: 4px solid #e11d48; padding-left: 8px; margin-bottom: 6px; }
-  .cat-row { display: flex; align-items: center; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; background: #fff; flex: 1; }
-  .cat-measure { flex: 1.3; padding: 10px 14px; background: #f9fafb; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; justify-content: center; }
-  .cat-measure .m-label { font-size: 10px; color: #9ca3af; margin-bottom: 4px; }
-  .cat-measure .m-val { display: inline-block; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
-
-  /* 순발력/유연성 가로 배치 */
-  .m-val-row { display: flex; gap: 8px; }
-  .m-val-cell { flex: 1; border: 1px solid #d1d5db; border-radius: 4px; padding: 5px 8px; background: #fff; display: flex; flex-direction: column; align-items: center; }
-  .m-cell-label { font-size: 9px; color: #9ca3af; font-weight: 500; margin-bottom: 2px; }
-  .m-cell-val { font-size: 14px; font-weight: 700; color: #1f2937; }
-
-  /* 심폐지구력 스텝검사 레이아웃 */
-  .step-test { display: flex; gap: 0; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; background: #fff; }
-  .step-left { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid #d1d5db; padding: 6px 8px; }
-  .step-header { font-size: 9px; color: #9ca3af; font-weight: 500; margin-bottom: 2px; }
-  .step-pei { display: flex; align-items: baseline; gap: 3px; }
-  .pei-val { font-size: 18px; font-weight: 900; color: #1f2937; }
-  .pei-label { font-size: 9px; color: #9ca3af; font-weight: 500; }
-  .step-right { flex: 1; display: flex; flex-direction: column; }
-  .step-row { display: flex; align-items: center; justify-content: space-between; padding: 3px 10px; border-bottom: 1px solid #e5e7eb; font-size: 12px; }
-  .step-row:last-child { border-bottom: none; }
-  .step-min { color: #6b7280; font-weight: 500; }
-  .step-bpm { font-weight: 700; color: #1f2937; }
-
-  .cat-score { flex: 0.7; text-align: center; padding: 8px 0; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-  .cat-score .s-label { font-size: 10px; color: #9ca3af; }
-  .cat-score .s-val { font-size: 26px; font-weight: 900; }
-  .cat-grade { flex: 0.7; text-align: center; padding: 8px 0; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-  .cat-grade .g-label { font-size: 10px; color: #9ca3af; }
-  .cat-grade .g-val { font-size: 17px; font-weight: 800; display: inline-block; padding: 3px 12px; border-radius: 5px; margin-top: 3px; }
-  .cat-emoji { flex: 0.4; text-align: center; padding: 6px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-  .cat-emoji .e-face { font-size: 32px; line-height: 1.1; }
-  .cat-emoji .e-label { font-size: 10px; color: #6b7280; margin-top: 2px; }
-
-  .paps-summary { margin-top: 14px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; background: #f9fafb; }
-  .paps-summary h3 { font-size: 14px; font-weight: 900; margin-bottom: 12px; }
-  .paps-summary .sum-row { display: flex; align-items: center; gap: 14px; }
-  .sum-label { font-size: 13px; font-weight: 600; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
-  .sum-score { font-size: 34px; font-weight: 900; flex: 1; text-align: center; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
-  .sum-score span { font-size: 16px; font-weight: 500; color: #9ca3af; }
-  .sum-grade { font-size: 22px; font-weight: 900; padding: 8px 20px; border-radius: 6px; border: 2px solid; }
-
-  .badges { display: flex; justify-content: space-around; margin-top: 14px; padding: 12px 0 4px 0; border-top: 1px solid #e5e7eb; }
-  .badge-item { text-align: center; min-width: 70px; }
-  .badge-item .b-icon { height: 32px; display: flex; align-items: center; justify-content: center; }
-  .badge-item .b-label { font-size: 10px; font-weight: 700; color: #374151; margin-top: 4px; }
-</style>
-</head>
-<body>
-<div class="page">
-  <div class="header">
-    <div class="header-logo">ATV PAPS Care</div>
-    <div class="header-title">스마트 PAPS 측정 결과</div>
-    <div class="header-school">${schoolName || '-'}</div>
-  </div>
-
-  <div class="info-bar">
-    <div class="info-no">${studentNo}<small>번</small></div>
-    <div class="info-body">
-      <div class="col"><b>학생 정보</b> | ${grade}학년 ${classNo}반 ${student?.name ?? studentNo + '번 학생'} (${genderLabel})</div>
-      <div class="col"><b>측정 월</b> | ${origIdx + 1}월</div>
-    </div>
-    <div class="info-right">
-      <div><b>체중</b> | ${weightKg}kg</div>
-      <div><b>신장</b> | ${heightCm}cm</div>
-    </div>
-  </div>
-
-  <div class="cats">
-  ${itemResults.map(item => {
-      const info = exerciseNames[item.exerciseId]
-      const g = item.result ? item.result.gradeNo : 5
-      const score = item.result ? (item.result.score ?? 0) : 0
-      const label = item.result ? item.label : '5등급'
-      const ej = gradeEmoji(g)
-      return `
-  <div class="cat">
-    <div class="cat-title">${info.category}</div>
-    <div class="cat-row">
-      <div class="cat-measure">
-        <div class="m-label">${info.method}</div>
-        ${getMeasureHtml(item.exerciseId, item.rawValue)}
-      </div>
-      <div class="cat-score">
-        <div class="s-label">평가 점수</div>
-        <div class="s-val">${score}</div>
-      </div>
-      <div class="cat-grade">
-        <div class="g-label">평가 결과</div>
-        <div class="g-val" style="background:${gradeBgPrint(g)}; color:${gradeColorPrint(g)};">
-          ${label}
-        </div>
-      </div>
-      <div class="cat-emoji">
-        <div class="e-face">${ej.emoji}</div>
-        <div class="e-label">${ej.label}</div>
-      </div>
-    </div>
-  </div>`
-    }).join('')}
-  </div>
-
-  <div class="paps-summary">
-    <h3>PAPS 평가</h3>
-    <div class="sum-row">
-      <div class="sum-label">신체 능력 검사 결과</div>
-      <div class="sum-score">${totalScore}<span>/100</span></div>
-      <div class="sum-grade" style="background:${gradeBgPrint(finalGrade)}; color:${gradeColorPrint(finalGrade)}; border-color:${gradeColorPrint(finalGrade)};">
-        ${finalGrade}등급
-      </div>
-    </div>
-  </div>
-
-  <div class="badges">
-    <div class="badge-item">
-      <div class="b-icon">${isSportsGifted ? greenCheck : emptyCircle}</div>
-      <div class="b-label">스포츠 영재</div>
-    </div>
-    <div class="badge-item">
-      <div class="b-icon">${isHealthExcellent ? greenCheck : emptyCircle}</div>
-      <div class="b-label">건강 체력 우수</div>
-    </div>
-    <div class="badge-item">
-      <div class="b-icon">${isFitnessExcellent ? greenCheck : emptyCircle}</div>
-      <div class="b-label">체력 우수</div>
-    </div>
-    <div class="badge-item">
-      <div class="b-icon">${isLowFitness ? redX : emptyCircle}</div>
-      <div class="b-label">저체력</div>
-    </div>
-    <div class="badge-item">
-      <div class="b-icon">${isObese ? redX : emptyCircle}</div>
-      <div class="b-label">비만</div>
-    </div>
-  </div>
-</div>
-  </div>
-</div>
-</body>
-</html>`
+    const html = renderPersonalReport({
+      schoolName: schoolName || '-',
+      studentName: student?.name ?? `${studentNo}번 학생`,
+      studentNo, grade, classNo, genderLabel, month: origIdx + 1,
+      heightCm: formatMeasurement(student?.height_cm),
+      weightKg: formatMeasurement(student?.weight_kg),
+      items: itemResults.map(item => ({
+        exerciseId: item.exerciseId,
+        ...exerciseNames[item.exerciseId],
+        measurement: measurement(item.exerciseId, item.rawValue),
+        score: item.result?.score ?? null,
+        gradeNo: item.result?.gradeNo ?? null,
+        resultLabel: item.label,
+      })),
+      totalScore, finalGrade,
+      badges: [
+        { key: 'sports', label: '스포츠 영재', active: power && cardio ? power.score === 20 && cardio.score === 20 : null },
+        { key: 'health', label: '건강 체력 우수', active: complete ? itemResults.every(item => item.result?.gradeNo === 1) : null },
+        { key: 'fitness', label: '체력 우수', active: cardio ? cardio.gradeNo === 1 : null },
+        { key: 'low', label: '저체력', active: complete ? itemResults.every(item => item.result!.gradeNo >= 4) : null },
+        { key: 'bmi', label: '비만', active: bmi ? bmi.gradeNo >= 4 : null },
+      ],
+    })
 
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
@@ -793,7 +572,9 @@ export default function PapsPage() {
       doc.close()
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      await doc?.fonts.ready
+      await Promise.allSettled(Array.from(doc?.images ?? [], (image) => image.decode()))
       iframe.contentWindow?.focus()
       iframe.contentWindow?.print()
       setTimeout(() => {
@@ -804,10 +585,9 @@ export default function PapsPage() {
 
   // 학급 전체 결과지 출력 핸들러
   const handlePrintClassAll = (origIdx: number) => {
-    const monthLabel = `${origIdx + 1}월`
-    const dateStr = `${year}년 ${origIdx + 1}월`
+    const formatValue = (value: number | null | undefined, digits = 1) =>
+      value == null ? '-' : Number(value).toFixed(digits)
 
-    // 30명 학생 데이터 구성
     const classData = Array.from({ length: 30 }, (_, idx) => {
       const num = idx + 1
       const student = students.find(s => s.student_no === num) || null
@@ -815,204 +595,59 @@ export default function PapsPage() {
       const gender = student?.gender ?? null
 
       const itemResults = gradeFields.map(field => {
-        if (!record) return { exerciseId: field.exerciseId, rawValue: null, result: null, label: '-' }
+        if (!record) return { exerciseId: field.exerciseId, result: null, label: '-' }
         const ref = findGradeRef(field.exerciseId, grade, gender)
-        const v = field.exerciseId === 4
+        const value = field.exerciseId === 4
           ? getCardioPEI(record, origIdx, schoolType, gender)
           : field.getValue(record, origIdx)
-        if (v === null || v === undefined || !ref) return { exerciseId: field.exerciseId, rawValue: v, result: null, label: '-' }
-
-        const res = calcGradeAndScore(Number(v), ref)
-        if (!res) return { exerciseId: field.exerciseId, rawValue: v, result: null, label: '-' }
-
+        const result = value == null || !ref ? null : calcGradeAndScore(Number(value), ref)
+        if (!result) return { exerciseId: field.exerciseId, result: null, label: '-' }
         if (field.exerciseId === 5) {
-          const bmi = getBmiResult(res.score)
-          return { exerciseId: field.exerciseId, rawValue: v, result: { gradeNo: bmi.gradeNo, score: bmi.score }, label: bmi.label }
+          const bmi = getBmiResult(result.score)
+          return { exerciseId: field.exerciseId, result: bmi, label: bmi.label }
         }
-        return { exerciseId: field.exerciseId, rawValue: v, result: res, label: `${res.gradeNo}등급` }
+        return { exerciseId: field.exerciseId, result, label: `${result.gradeNo}등급` }
       })
 
-      const totalScore = itemResults.reduce((sum, item) => sum + (item.result?.score ?? 0), 0)
-      const hasAnyData = itemResults.some(item => item.result !== null)
-      const finalGrade = !hasAnyData ? null
+      // Use the same incomplete-assessment display rule as the personal report.
+      const complete = itemResults.every(item => item.result !== null)
+      const totalScore = complete ? itemResults.reduce((sum, item) => sum + item.result!.score, 0) : null
+      const finalGrade = totalScore === null ? null
         : totalScore < 20 ? 5
           : totalScore < 40 ? 4
             : totalScore < 60 ? 3
-              : totalScore < 80 ? 2
-                : 1
+              : totalScore < 80 ? 2 : 1
 
-      // 측정값 가져오기
-      const getMeasureValue = (exerciseId: number) => {
-        if (!record) return '-'
-        if (exerciseId === 1) {
-          const v = record.muscular_endurance[origIdx]
-          return v !== null ? Math.round(Number(v)).toString() : '-'
+      const measurement = (exerciseId: number): ClassReportMeasurement => {
+        if (exerciseId === 2 || exerciseId === 3) {
+          const first = exerciseId === 2 ? record?.power_1[origIdx] : record?.flexibility_1[origIdx]
+          const second = exerciseId === 2 ? record?.power_2[origIdx] : record?.flexibility_2[origIdx]
+          return { kind: 'paired', first: formatValue(first), second: formatValue(second) }
         }
-        if (exerciseId === 2) {
-          const v1 = record.power_1[origIdx]
-          const v2 = record.power_2[origIdx]
-          if (v1 === null && v2 === null) return '-'
-          const s1 = v1 !== null ? Number(v1).toFixed(2) : '-'
-          const s2 = v2 !== null ? Number(v2).toFixed(2) : '-'
-          return `${s1} / ${s2}`
-        }
-        if (exerciseId === 3) {
-          const v1 = record.flexibility_1[origIdx]
-          const v2 = record.flexibility_2[origIdx]
-          if (v1 === null && v2 === null) return '-'
-          const s1 = v1 !== null ? Number(v1).toFixed(2) : '-'
-          const s2 = v2 !== null ? Number(v2).toFixed(2) : '-'
-          return `${s1} / ${s2}`
-        }
-        if (exerciseId === 4) {
-          const pei = getCardioPEI(record, origIdx, schoolType, gender)
-          return pei !== null ? pei.toFixed(1) : '-'
-        }
-        if (exerciseId === 5) {
-          const v = record.bmi[origIdx]
-          return v !== null ? Number(v).toFixed(2) : '-'
-        }
-        return '-'
+        const value = exerciseId === 1 ? record?.muscular_endurance[origIdx]
+          : exerciseId === 4 ? record ? getCardioPEI(record, origIdx, schoolType, gender) : null
+            : record?.bmi[origIdx]
+        return { kind: 'single', value: formatValue(value, exerciseId === 1 ? 0 : 1) }
       }
 
       return {
-        num,
+        number: num,
         name: student?.name ?? `${num}번 학생`,
-        items: itemResults,
-        measureValues: gradeFields.map(f => getMeasureValue(f.exerciseId)),
-        totalScore: hasAnyData ? totalScore : null,
+        items: itemResults.map(item => ({
+          exerciseId: item.exerciseId,
+          gradeNo: item.result?.gradeNo ?? null,
+          resultLabel: item.label,
+          measurement: measurement(item.exerciseId),
+        })),
         finalGrade,
       }
     })
 
-    // 15명씩 2페이지로 분할
-    const pages = [classData.slice(0, 15), classData.slice(15, 30)]
-
-    const gradeColorPrint = (g: number) => {
-      const map: Record<number, string> = { 1: '#2563eb', 2: '#16a34a', 3: '#ca8a04', 4: '#ea580c', 5: '#dc2626' }
-      return map[g] ?? '#6b7280'
-    }
-    const gradeBgPrint = (g: number) => {
-      const map: Record<number, string> = { 1: '#dbeafe', 2: '#dcfce7', 3: '#fef9c3', 4: '#ffedd5', 5: '#fee2e2' }
-      return map[g] ?? '#f3f4f6'
-    }
-
-    const exerciseHeaders = [
-      { category: '근력·근지구력 평가', method: '윗몸 말아올리기' },
-      { category: '순발력 평가', method: '제자리멀리뛰기' },
-      { category: '유연성 평가', method: '앉아 윗몸앞으로 굽히기' },
-      { category: '심폐지구력 평가', method: '스텝 검사' },
-      { category: '체지방지수 평가', method: 'BMI' },
-    ]
-
-    const renderPage = (pageData: typeof classData, pageNum: number, totalPages: number) => `
-      <div class="page">
-        <div class="header">
-          <div class="header-left">
-            ATV PAPS Care
-          </div>
-          <div class="header-center">스마트 PAPS 측정 결과</div>
-          <div class="header-right">${schoolName || '-'}</div>
-        </div>
-
-        <div class="sub-header">
-          <div class="sub-title">${grade}학년 ${classNo}반 전체 기록지</div>
-          <div class="sub-date">${dateStr}</div>
-        </div>
-
-        <table class="main-table">
-          <thead>
-            <tr>
-              <th rowspan="2" class="col-no">번호</th>
-              <th rowspan="2" class="col-name">이름</th>
-              ${exerciseHeaders.map(h => `<th colspan="1" class="col-exercise">${h.category}<br/><small>${h.method}</small></th>`).join('')}
-              <th rowspan="2" class="col-total">종합 평가</th>
-            </tr>
-            <tr>
-              ${exerciseHeaders.map(() => `<th class="col-sub"></th>`).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            ${pageData.map(d => `
-              <tr>
-                <td class="cell-no">${d.num}</td>
-                <td class="cell-name">${d.name}</td>
-                ${d.items.map((item, i) => `
-                  <td class="cell-data">
-                    <div class="grade-row">${item.result ? `<span class="grade-badge" style="background:${gradeBgPrint(item.result.gradeNo)};color:${gradeColorPrint(item.result.gradeNo)}">${item.label}</span>` : '<span class="no-data">-</span>'}</div>
-                    <div class="measure-row">${d.measureValues[i]}</div>
-                  </td>
-                `).join('')}
-                <td class="cell-total">${d.finalGrade ? `<span class="total-grade" style="background:${gradeBgPrint(d.finalGrade)};color:${gradeColorPrint(d.finalGrade)}">${d.finalGrade}등급</span>` : '-'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <div class="footer">
-          <div class="footer-page">-${pageNum}페이지-</div>
-          <div class="footer-url">https://spopark.kr</div>
-        </div>
-      </div>
-    `
-
-    const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>PAPS 학급 전체 기록지 - ${grade}학년 ${classNo}반</title>
-<style>
-  @page { size: A4 landscape; margin: 8mm 10mm; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; }
-  body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; color: #1f2937; background: #fff; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-  .page { page-break-after: always; padding: 4px 0; display: flex; flex-direction: column; height: 100vh; }
-  .page:last-child { page-break-after: avoid; }
-
-  .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 6px; border-bottom: 3px solid #e11d48; margin-bottom: 6px; }
-  .header-left { display: inline-block; background: #e11d48; color: #fff; font-weight: 900; font-size: 12px; padding: 4px 12px; border-radius: 5px; letter-spacing: 0.5px; }
-  .header-center { font-size: 16px; font-weight: 800; color: #e11d48; }
-  .header-right { font-size: 13px; font-weight: 700; color: #374151; }
-
-  .sub-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-  .sub-title { font-size: 14px; font-weight: 800; color: #1f2937; }
-  .sub-date { font-size: 12px; color: #6b7280; }
-
-  .main-table { width: 100%; border-collapse: collapse; flex: 1; table-layout: fixed; }
-  .main-table th, .main-table td { border: 1px solid #d1d5db; text-align: center; vertical-align: middle; }
-  .main-table thead th { background: #f9fafb; font-weight: 700; padding: 5px 2px; font-size: 10px; color: #374151; }
-  .main-table thead th small { font-weight: 500; color: #6b7280; font-size: 9px; display: block; margin-top: 1px; }
-  .col-no { width: 32px; }
-  .col-name { width: 52px; }
-  .col-exercise { }
-  .col-sub { height: 0; padding: 0 !important; border-top: none !important; }
-  .col-total { width: 58px; }
-
-  .main-table tbody td { padding: 3px 2px; font-size: 10px; }
-  .cell-no { font-weight: 700; font-size: 11px; background: #f9fafb; }
-  .cell-name { font-weight: 600; font-size: 11px; background: #f9fafb; }
-  .cell-data { }
-  .grade-row { margin-bottom: 1px; }
-  .grade-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; }
-  .measure-row { font-size: 9px; color: #1f2937; font-weight: 600; }
-  .no-data { color: #d1d5db; }
-  .cell-total { font-weight: 800; font-size: 12px; }
-  .total-grade { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; }
-
-  .footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding-top: 4px; border-top: 1px solid #e5e7eb; }
-  .footer-page { font-size: 10px; color: #9ca3af; flex: 1; text-align: center; }
-  .footer-url { font-size: 10px; color: #9ca3af; }
-
-  @media print {
-    .page { height: auto; min-height: 100vh; }
-  }
-</style>
-</head>
-<body>
-${pages.map((pageData, i) => renderPage(pageData, i + 1, pages.length)).join('')}
-</body>
-</html>`
+    const html = renderClassReport({
+      schoolName: schoolName || '-',
+      grade, classNo, year, month: origIdx + 1,
+      students: classData,
+    })
 
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
@@ -1030,7 +665,9 @@ ${pages.map((pageData, i) => renderPage(pageData, i + 1, pages.length)).join('')
       doc.close()
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      await doc?.fonts.ready
+      await Promise.allSettled(Array.from(doc?.images ?? [], (image) => image.decode()))
       iframe.contentWindow?.focus()
       iframe.contentWindow?.print()
       setTimeout(() => {
@@ -1106,122 +743,68 @@ ${pages.map((pageData, i) => renderPage(pageData, i + 1, pages.length)).join('')
   }
 
   return (
-    <div className="space-y-6 text-white">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">PAPS 기록 관리</h1>
-      </div>
+    <div className="console-page space-y-5">
+      <PageHeader title="PAPS 기록 관리" eyebrow="기록 관리" />
 
-      <div className="bg-white/95 rounded-lg shadow p-6">
-        <div className="flex flex-wrap items-end gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-indigo-700 mb-1">년도</label>
-            <select
-              value={year}
-              onChange={(e) => onChangeYear(Number(e.target.value))}
-              className="block w-36 h-12 px-4 rounded-lg border-2 border-indigo-300 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 hover:border-indigo-300 active:border-indigo-300"
-            >
-              {(() => {
-                const base = computeDefaultYear()
-                const years: number[] = []
-                for (let y = base + 1; y >= base - 5; y--) {
-                  years.push(y)
-                }
-                return years.map((y) => (
-                  <option key={y} value={y}>{y}년</option>
-                ))
-              })()}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-indigo-700 mb-1">학년</label>
-            <select
-              value={grade}
-              onChange={(e) => onChangeGrade(Number(e.target.value))}
-              className="block w-36 h-12 px-4 rounded-lg border-2 border-indigo-300 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 hover:border-indigo-300 active:border-indigo-300"
-            >
-              {Array.from({ length: schoolType === 1 ? 6 : 3 }).map((_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1}학년</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-indigo-700 mb-1">반</label>
-            <select
-              value={classNo}
-              onChange={(e) => onChangeClassNo(Number(e.target.value))}
-              className="block w-36 h-12 px-4 rounded-lg border-2 border-indigo-300 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 hover:border-indigo-300 active:border-indigo-300"
-            >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1}반</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      <FilterBar>
+        <ClassFilterFields
+          year={year} grade={grade} classNo={classNo}
+          years={Array.from({ length: 7 }, (_, index) => {
+            const value = computeDefaultYear() + 1 - index
+            return { value, label: `${value}년` }
+          })}
+          gradeCount={schoolType === 1 ? 6 : 3} labels={{ year: '년도' }}
+          onYearChange={onChangeYear} onGradeChange={onChangeGrade} onClassChange={onChangeClassNo}
+        />
+      </FilterBar>
 
       {/* 탭 메뉴: 기록 / 등급 + 결과지 출력 버튼 */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="inline-flex rounded-full overflow-hidden border border-white/70 shadow">
-          <button
-            onClick={() => setView('record')}
-            className={`px-6 py-2 text-sm font-semibold transition ${view === 'record' ? 'bg-amber-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            기록
-          </button>
-          <button
-            onClick={() => setView('grade')}
-            className={`px-6 py-2 text-sm font-semibold transition ${view === 'grade' ? 'bg-amber-500 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'}`}
-          >
-            등급
-          </button>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ToggleGroup type="single" value={view} onValueChange={(value) => { if (value) setView(value as PapsViewMode) }} aria-label="PAPS 보기">
+          <ToggleGroupItem value="record">기록</ToggleGroupItem>
+          <ToggleGroupItem value="grade">등급</ToggleGroupItem>
+        </ToggleGroup>
         <div className="flex items-center gap-2">
-          <button
+          <Button variant="outline"
             onClick={() => setShowPrintTypeModal(true)}
-            className="px-5 py-2 text-sm font-semibold rounded-lg bg-white text-gray-900 border border-gray-300 shadow hover:bg-gray-50 transition flex items-center gap-2"
+            className="px-5 py-2 text-[13px] font-semibold bg-card text-foreground border border-border hover:bg-muted transition flex items-center gap-2"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
+            <Printer className="size-4" aria-hidden="true" />
             결과지 출력
-          </button>
-          <button
+          </Button>
+          <Button variant="outline"
             onClick={() => setShowExcelModal(true)}
-            className="px-5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white border border-emerald-700 shadow hover:bg-emerald-700 transition flex items-center gap-2"
+            className="px-5 py-2 text-[13px] font-semibold bg-primary text-primary-foreground border border-border hover:bg-primary transition flex items-center gap-2"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+            <Download className="size-4" aria-hidden="true" />
             엑셀 출력
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="bg-white/95 rounded-lg shadow p-6 text-gray-900">
-        {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
+      <div className="min-w-0 border-y border-border bg-card">
+        {error && <div className="mb-4 text-[13px] text-destructive">{error}</div>}
 
         {view === 'record' ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 table-fixed">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 w-16 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">번호</th>
-                  <th className="px-3 py-2 w-32 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                  <th className="px-2 py-2 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+          <div className="[&>div]:max-h-[calc(100dvh-18rem)] [&>div]:overflow-auto">
+            <Table className="min-w-[1040px] text-[13px] font-normal tabular-nums">
+              <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b-2">
+                <TableRow>
+                  <TableHead className="px-3 py-2 w-16 text-left text-[13px] font-bold text-foreground">번호</TableHead>
+                  <TableHead className="px-3 py-2 w-32 text-left text-[13px] font-bold text-foreground">이름</TableHead>
+                  <TableHead className="px-2 py-2 w-24 text-center text-[13px] font-bold text-foreground"></TableHead>
                   {months.map((m) => (
-                    <th
+                    <TableHead
                       key={m}
-                      className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-2 py-2 text-center text-[13px] font-bold text-foreground"
                       style={{ width: monthCellPx }}
                     >
                       {m}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                </TableRow>
+              </TableHeader>
+              <TableBody className="bg-card divide-y divide-border">
                 {Array.from({ length: 30 }).map((_, idx) => {
                   const num = idx + 1
                   const s = students.find(st => st.student_no === num) || null
@@ -1232,53 +815,56 @@ ${pages.map((pageData, i) => renderPage(pageData, i + 1, pages.length)).join('')
                     <React.Fragment key={num}>
                       {recordFields.map((field, fieldIdx) => {
                         return (
-                          <tr key={`${num}-${field.key}`} className={`${field.bgClass} h-[42px]`}>
+                          <TableRow key={`${num}-${field.key}`} className={`${field.bgClass} h-[42px]`}>
                             {fieldIdx === 0 && (
                               <>
-                                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 align-middle text-center bg-gray-50 border-b border-gray-200" rowSpan={mergedRowSpan}>{num}</td>
-                                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 align-middle text-center bg-gray-50 border-b border-gray-200" rowSpan={mergedRowSpan}>
+                                <TableCell className="px-3 py-2 whitespace-nowrap text-[13px] font-bold text-foreground align-middle text-center bg-card border-b border-border" rowSpan={mergedRowSpan}>{num}</TableCell>
+                                <TableCell className="px-3 py-2 whitespace-nowrap text-[13px] font-bold text-foreground align-middle text-center bg-card border-b border-border" rowSpan={mergedRowSpan}>
                                   {s ? s.name : `${num}번 학생`}
-                                </td>
+                                </TableCell>
                               </>
                             )}
-                            <td className={`px-2 py-2 whitespace-nowrap text-xs text-center font-semibold ${field.textClass}`}>{field.label}</td>
+                            <TableCell className={`px-2 py-2 whitespace-nowrap text-[13px] text-center font-normal ${field.textClass}`}>
+                              {field.label}
+                              <span className="block text-[11px] font-normal">({field.unit})</span>
+                            </TableCell>
                             {monthOrderIdx.map((origIdx, i) => {
                               return (
-                                <td key={i} className="px-1 py-1 whitespace-nowrap text-sm text-center text-gray-900" style={{ width: monthCellPx }}>
+                                <TableCell key={i} className="px-1 py-1 whitespace-nowrap text-[13px] text-center text-foreground" style={{ width: monthCellPx }}>
                                   {r ? field.render(r, origIdx) : '-'}
-                                </td>
+                                </TableCell>
                               )
                             })}
-                          </tr>
+                          </TableRow>
                         )
                       })}
                     </React.Fragment>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           /* 등급 탭 */
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 table-fixed">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 w-16 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">번호</th>
-                  <th className="px-3 py-2 w-28 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                  <th className="px-2 py-2 w-24 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+          <div className="[&>div]:max-h-[calc(100dvh-18rem)] [&>div]:overflow-auto">
+            <Table className="min-w-[1040px] text-[13px] font-normal tabular-nums">
+              <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b-2">
+                <TableRow>
+                  <TableHead className="px-3 py-2 w-16 text-left text-[13px] font-bold text-foreground">번호</TableHead>
+                  <TableHead className="px-3 py-2 w-28 text-left text-[13px] font-bold text-foreground">이름</TableHead>
+                  <TableHead className="px-2 py-2 w-24 text-center text-[13px] font-bold text-foreground"></TableHead>
                   {months.map((m) => (
-                    <th
+                    <TableHead
                       key={m}
-                      className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-2 py-2 text-center text-[13px] font-bold text-foreground"
                       style={{ width: monthCellPx }}
                     >
                       {m}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                </TableRow>
+              </TableHeader>
+              <TableBody className="bg-card divide-y divide-border">
                 {Array.from({ length: 30 }).map((_, idx) => {
                   const num = idx + 1
                   const s = students.find(st => st.student_no === num) || null
@@ -1322,74 +908,71 @@ ${pages.map((pageData, i) => renderPage(pageData, i + 1, pages.length)).join('')
                   return (
                     <React.Fragment key={num}>
                       {fieldResults.map(({ field, results }, fieldIdx) => (
-                        <tr key={`${num}-${field.key}`} className={`${field.bgClass} h-[42px]`}>
+                        <TableRow key={`${num}-${field.key}`} className={`${field.bgClass} h-[42px]`}>
                           {fieldIdx === 0 && (
                             <>
-                              <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 align-middle text-center bg-gray-50 border-b border-gray-200" rowSpan={mergedRowSpan}>{num}</td>
-                              <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 align-middle text-center bg-gray-50 border-b border-gray-200" rowSpan={mergedRowSpan}>
+                              <TableCell className="px-3 py-2 whitespace-nowrap text-[13px] font-bold text-foreground align-middle text-center bg-card border-b border-border" rowSpan={mergedRowSpan}>{num}</TableCell>
+                              <TableCell className="px-3 py-2 whitespace-nowrap text-[13px] font-bold text-foreground align-middle text-center bg-card border-b border-border" rowSpan={mergedRowSpan}>
                                 {s ? s.name : `${num}번 학생`}
-                              </td>
+                              </TableCell>
                             </>
                           )}
-                          <td className={`px-2 py-2 whitespace-nowrap text-xs text-center font-semibold ${field.textClass}`}>{field.label}</td>
+                          <TableCell className={`px-2 py-2 whitespace-nowrap text-[13px] text-center font-normal ${field.textClass}`}>{field.label}</TableCell>
                           {results.map((res, mIdx) => (
-                            <td key={mIdx} className="px-1 py-1 whitespace-nowrap text-xs text-center" style={{ width: monthCellPx }}>
+                            <TableCell key={mIdx} className="px-1 py-1 whitespace-nowrap text-[13px] font-normal text-center" style={{ width: monthCellPx }}>
                               {res !== null ? (
-                                <span className={`inline-block px-1.5 py-0.5 rounded-full text-xs font-bold ${gradeColor(res.gradeNo)}`}>
+                                <span className={`inline-block px-1.5 py-0.5 text-[13px] font-normal ${gradeColor(res.gradeNo)}`}>
                                   {res.label}
                                 </span>
                               ) : '-'}
-                            </td>
+                            </TableCell>
                           ))}
-                        </tr>
+                        </TableRow>
                       ))}
                       {/* 합계 점수 요약 행 */}
-                      <tr className="bg-gray-300 h-[42px] border-t-2 border-amber-300 border-b border-gray-200">
-                        <td className="px-2 py-2 whitespace-nowrap text-sm text-center font-semibold text-gray-700">합계</td>
+                      <TableRow className="bg-muted h-[42px] border-t-2 border-border border-b border-border">
+                        <TableCell className="px-2 py-2 whitespace-nowrap text-[13px] text-center font-semibold text-foreground">합계</TableCell>
                         {monthTotals.map((total, mIdx) => {
                           const g = getMonthGrade(total)
                           return (
-                            <td key={mIdx} className="px-2 py-1 whitespace-nowrap text-center" style={{ width: monthCellPx }}>
+                            <TableCell key={mIdx} className="px-2 py-1 whitespace-nowrap text-center" style={{ width: monthCellPx }}>
                               {g !== null ? (
-                                <span className={`text-[15px] font-black ${gradeTextColor(g)}`}>
+                                <span className={`text-[13px] font-normal ${gradeTextColor(g)}`}>
                                   {g}등급
                                 </span>
                               ) : '-'}
-                            </td>
+                            </TableCell>
                           )
                         })}
-                      </tr>
+                      </TableRow>
                     </React.Fragment>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
 
       {/* 결과지 출력 모달 */}
-      {showPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPrintModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">결과지 출력</h2>
-              <button onClick={() => setShowPrintModal(false)} className="text-gray-400 hover:text-gray-600 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+      <Dialog open={showPrintModal} onOpenChange={setShowPrintModal}>
+        <DialogContent className="bg-card max-h-[90dvh] overflow-y-auto sm:max-w-xl" aria-describedby={undefined}>
+            <div className="border-b-2 border-border pb-3 pr-8">
+              <DialogTitle>결과지 출력</DialogTitle>
+
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-3">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="py-2 text-left text-xs font-semibold text-gray-500 w-12">번호</th>
-                    <th className="py-2 text-left text-xs font-semibold text-gray-500">이름</th>
-                    <th className="py-2 text-center text-xs font-semibold text-gray-500 w-28">월 선택</th>
-                    <th className="py-2 text-right text-xs font-semibold text-gray-500 w-20">출력</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full text-[13px]">
+                <TableHeader>
+                  <TableRow className="border-b border-border">
+                    <TableHead className="py-2 text-left text-[13px] font-bold text-foreground w-12">번호</TableHead>
+                    <TableHead className="py-2 text-left text-[13px] font-bold text-foreground">이름</TableHead>
+                    <TableHead className="py-2 text-center text-[13px] font-bold text-foreground w-28">월 선택</TableHead>
+                    <TableHead className="py-2 text-right text-[13px] font-bold text-foreground w-20">출력</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {Array.from({ length: 30 }, (_, idx) => {
                     const num = idx + 1
                     const st = students.find(s => s.student_no === num) || null
@@ -1402,209 +985,196 @@ ${pages.map((pageData, i) => renderPage(pageData, i + 1, pages.length)).join('')
                     const isCurrentEmpty = !hasStudentData(num, currentOrigIdx)
 
                     return (
-                      <tr key={num} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                        <td className="py-2.5 text-sm font-semibold text-gray-700">{num}</td>
-                        <td className="py-2.5 text-sm text-gray-900">{st ? st.name : `${num}번 학생`}</td>
-                        <td className="py-2.5 text-center">
+                      <TableRow key={num} className="border-b border-border hover:bg-muted transition">
+                        <TableCell className="py-2.5 text-[13px] font-semibold text-foreground">{num}</TableCell>
+                        <TableCell className="py-2.5 text-[13px] font-bold text-foreground">{st ? st.name : `${num}번 학생`}</TableCell>
+                        <TableCell className="py-2.5 text-center">
                           {hasAnyData ? (
-                            <select
+                            <RecordSelect aria-label="출력할 월"
                               value={currentOrigIdx}
-                              onChange={(e) => {
-                                const val = Number(e.target.value)
+                              onValueChange={(value) => {
+                                const val = Number(value)
                                 setStudentPrintMonths(prev => ({ ...prev, [num]: val }))
                               }}
-                              className="h-8 px-2 rounded border border-gray-300 text-xs font-medium text-gray-900 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                              className="h-9 min-w-28"
                             >
                               {availableMonths.map(origIdx => (
                                 <option key={origIdx} value={origIdx}>
                                   {origIdx + 1}월
                                 </option>
                               ))}
-                            </select>
+                            </RecordSelect>
                           ) : (
-                            <span className="text-gray-400 text-xs">-</span>
+                            <span className="text-muted-foreground text-xs">-</span>
                           )}
-                        </td>
-                        <td className="py-2.5 text-right">
-                          <button
+                        </TableCell>
+                        <TableCell className="py-2.5 text-right">
+                          <Button variant="outline"
                             onClick={() => handlePrintStudent(num, currentOrigIdx)}
                             disabled={isCurrentEmpty}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition shadow-sm ${isCurrentEmpty
-                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                              : 'bg-amber-500 text-white hover:bg-amber-600'
+                            className={`px-3 py-1.5 text-xs font-semibold transition ${isCurrentEmpty
+                              ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                              : 'bg-primary text-primary-foreground hover:bg-primary'
                               }`}
                           >
                             출력
-                          </button>
-                        </td>
-                      </tr>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
-            <div className="px-6 py-3 border-t border-gray-200 flex justify-end">
-              <button
+            <div className="px-6 py-3 border-t border-border flex justify-end">
+              <Button variant="outline"
                 onClick={() => setShowPrintModal(false)}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                className="px-4 py-2 text-[13px] font-semibold bg-muted text-foreground hover:bg-muted transition"
               >
                 닫기
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+
+        </DialogContent>
+      </Dialog>
 
       {/* 출력 유형 선택 모달 */}
-      {showPrintTypeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPrintTypeModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">출력 유형 선택</h2>
-              <button onClick={() => setShowPrintTypeModal(false)} className="text-gray-400 hover:text-gray-600 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+      <Dialog open={showPrintTypeModal} onOpenChange={setShowPrintTypeModal}>
+        <DialogContent className="bg-card max-h-[90dvh] overflow-y-auto sm:max-w-md" aria-describedby={undefined}>
+            <div className="border-b-2 border-border pb-3 pr-8">
+              <DialogTitle>출력 유형 선택</DialogTitle>
+
             </div>
             <div className="px-6 py-6 flex flex-col gap-3">
-              <button
+              <Button variant="outline"
                 onClick={() => {
                   setShowPrintTypeModal(false)
                   setShowPrintModal(true)
                 }}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border-2 border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition group"
+                className="h-auto min-h-20 w-full justify-start gap-4 whitespace-normal border-2 px-5 py-4 text-left"
               >
-                <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center text-2xl group-hover:bg-amber-200 transition">
-                  👤
+                <div className="w-12 h-12 bg-card flex items-center justify-center text-2xl group-hover:bg-card transition">
+                  <UserRound className="size-6" aria-hidden="true" />
                 </div>
                 <div className="text-left">
-                  <div className="font-bold text-gray-900 text-sm">학생 개인</div>
-                  <div className="text-xs text-gray-500 mt-0.5">학생별 개별 결과지를 출력합니다</div>
+                  <div className="font-bold text-foreground text-[13px]">학생 개인</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">학생별 개별 결과지를 출력합니다</div>
                 </div>
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 onClick={() => {
                   setShowPrintTypeModal(false)
                   setShowClassPrintModal(true)
                 }}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-xl border-2 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition group"
+                className="h-auto min-h-20 w-full justify-start gap-4 whitespace-normal border-2 px-5 py-4 text-left"
               >
-                <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center text-2xl group-hover:bg-indigo-200 transition">
-                  👥
+                <div className="w-12 h-12 bg-card flex items-center justify-center text-2xl group-hover:bg-card transition">
+                  <UsersRound className="size-6" aria-hidden="true" />
                 </div>
                 <div className="text-left">
-                  <div className="font-bold text-gray-900 text-sm">학급 전체</div>
-                  <div className="text-xs text-gray-500 mt-0.5">학급 전체 기록지를 출력합니다</div>
+                  <div className="font-bold text-foreground text-[13px]">학급 전체</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">학급 전체 기록지를 출력합니다</div>
                 </div>
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+
+        </DialogContent>
+      </Dialog>
 
       {/* 학급 전체 출력 모달 */}
-      {showClassPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowClassPrintModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">학급 전체 기록지 출력</h2>
-              <button onClick={() => setShowClassPrintModal(false)} className="text-gray-400 hover:text-gray-600 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+      <Dialog open={showClassPrintModal} onOpenChange={setShowClassPrintModal}>
+        <DialogContent className="bg-card max-h-[90dvh] overflow-y-auto sm:max-w-sm" aria-describedby={undefined}>
+            <div className="border-b-2 border-border pb-3 pr-8">
+              <DialogTitle>학급 전체 기록지 출력</DialogTitle>
+
             </div>
             <div className="px-6 py-6">
               <div className="mb-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">대상 학급</div>
-                <div className="text-lg font-bold text-gray-900">{grade}학년 {classNo}반</div>
+                <div className="text-[13px] font-semibold text-foreground mb-2">대상 학급</div>
+                <div className="text-lg font-bold text-foreground">{grade}학년 {classNo}반</div>
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">출력할 월 선택</label>
-                <select
+                <Label className="block text-[13px] font-semibold text-foreground mb-2">출력할 월 선택</Label>
+                <RecordSelect aria-label="출력할 월 선택"
                   value={classPrintMonth}
-                  onChange={(e) => setClassPrintMonth(Number(e.target.value))}
-                  className="w-full h-12 px-4 rounded-lg border-2 border-indigo-300 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  onValueChange={(value) => setClassPrintMonth(Number(value))}
+                  className="h-9 min-w-28"
                 >
                   {monthOrderIdx.map(origIdx => (
                     <option key={origIdx} value={origIdx}>{origIdx + 1}월</option>
                   ))}
-                </select>
+                </RecordSelect>
               </div>
               <div className="flex gap-3">
-                <button
+                <Button variant="outline"
                   onClick={() => setShowClassPrintModal(false)}
-                  className="flex-1 px-4 py-3 text-sm font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                  className="flex-1 px-4 py-3 text-[13px] font-semibold bg-muted text-foreground hover:bg-muted transition"
                 >
                   취소
-                </button>
-                <button
+                </Button>
+                <Button variant="outline"
                   onClick={() => {
                     setShowClassPrintModal(false)
                     handlePrintClassAll(classPrintMonth)
                   }}
-                  className="flex-1 px-4 py-3 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 text-[13px] font-semibold bg-primary text-primary-foreground hover:bg-primary transition flex items-center justify-center gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
+                  <Printer className="size-4" aria-hidden="true" />
                   출력
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+
+        </DialogContent>
+      </Dialog>
 
       {/* 엑셀 출력 모달 */}
-      {showExcelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowExcelModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">엑셀 파일 다운로드</h2>
-              <button onClick={() => setShowExcelModal(false)} className="text-gray-400 hover:text-gray-600 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+      <Dialog open={showExcelModal} onOpenChange={setShowExcelModal}>
+        <DialogContent className="bg-card max-h-[90dvh] overflow-y-auto sm:max-w-sm" aria-describedby={undefined}>
+            <div className="border-b-2 border-border pb-3 pr-8">
+              <DialogTitle>엑셀 파일 다운로드</DialogTitle>
+
             </div>
             <div className="px-6 py-6">
               <div className="mb-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">대상 학급</div>
-                <div className="text-lg font-bold text-gray-900">{grade}학년 {classNo}반</div>
+                <div className="text-[13px] font-semibold text-foreground mb-2">대상 학급</div>
+                <div className="text-lg font-bold text-foreground">{grade}학년 {classNo}반</div>
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">다운로드할 월 선택</label>
-                <select
+                <Label className="block text-[13px] font-semibold text-foreground mb-2">다운로드할 월 선택</Label>
+                <RecordSelect aria-label="다운로드할 월 선택"
                   value={excelMonth}
-                  onChange={(e) => setExcelMonth(Number(e.target.value))}
-                  className="w-full h-12 px-4 rounded-lg border-2 border-emerald-400 bg-white shadow text-lg font-semibold text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  onValueChange={(value) => setExcelMonth(Number(value))}
+                  className="h-9 min-w-28"
                 >
                   {monthOrderIdx.map(origIdx => (
                     <option key={origIdx} value={origIdx}>{origIdx + 1}월</option>
                   ))}
-                </select>
+                </RecordSelect>
               </div>
               <div className="flex gap-3">
-                <button
+                <Button variant="outline"
                   onClick={() => setShowExcelModal(false)}
-                  className="flex-1 px-4 py-3 text-sm font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                  className="flex-1 px-4 py-3 text-[13px] font-semibold bg-muted text-foreground hover:bg-muted transition"
                 >
                   취소
-                </button>
-                <button
+                </Button>
+                <Button variant="outline"
                   onClick={() => {
                     setShowExcelModal(false)
                     handleExcelExport(excelMonth)
                   }}
-                  className="flex-1 px-4 py-3 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 text-[13px] font-semibold bg-primary text-primary-foreground hover:bg-primary transition flex items-center justify-center gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <Download className="size-4" aria-hidden="true" />
                   다운로드
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,7 +1,18 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { PageHeader } from '@/components/console/page-header'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useFeedback } from '@/components/console/feedback-provider'
+import { X, Settings2, StickyNote } from 'lucide-react'
+
+import {
+  isCanonicalHeartRateDeviceId,
+  validateHeartRateMappings,
+} from '@/lib/heartRateMapping'
 
 type SchoolDeviceInstance = {
   id: string
@@ -83,6 +94,7 @@ type DraftSettingsPage = Omit<SettingsPage, 'blocks'> &
   }
 
 export default function SchoolSettingsPage() {
+  const { notify, confirmAction } = useFeedback()
   const [devices, setDevices] = useState<SchoolDeviceInstance[]>([])
   const [loadingDevices, setLoadingDevices] = useState(true)
 
@@ -173,6 +185,24 @@ export default function SchoolSettingsPage() {
   const [heartRateMappings, setHeartRateMappings] = useState<Array<{ student_no: number; device_id: string }>>([])
   const [heartRateMappingSaving, setHeartRateMappingSaving] = useState(false)
   const [heartRateMappingLabel, setHeartRateMappingLabel] = useState('')
+  const heartRateMappingValidation = useMemo(
+    () => validateHeartRateMappings(heartRateMappings),
+    [heartRateMappings],
+  )
+  const duplicateHeartRateDeviceIds = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const mapping of heartRateMappings) {
+      if (mapping.device_id !== '') {
+        counts.set(mapping.device_id, (counts.get(mapping.device_id) ?? 0) + 1)
+      }
+    }
+    return new Set(
+      [...counts.entries()]
+        .filter(([, count]) => count > 1)
+        .map(([deviceId]) => deviceId),
+    )
+  }, [heartRateMappings])
+  const hasInvalidHeartRateMapping = !heartRateMappingValidation.ok
 
   const loadDevices = async () => {
     setLoadingDevices(true)
@@ -202,12 +232,6 @@ export default function SchoolSettingsPage() {
   const rows = useMemo(() => {
     return devices.filter(d => !d.link_group_id || d.is_primary)
   }, [devices])
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resolveHex = (hex: any) => {
-    const v = String(hex || '').trim()
-    return /^#[0-9a-fA-F]{6}$/.test(v) ? v : null
-  }
 
   const loadDevicePages = async (schoolDeviceId: string) => {
     const res = await fetch(`/api/school/device-pages?school_device_id=${encodeURIComponent(schoolDeviceId)}`, {
@@ -284,13 +308,13 @@ export default function SchoolSettingsPage() {
     } catch (e: unknown) {
       setSettingsLoading(false)
       const message = e instanceof Error ? e.message : String(e)
-      alert(message || '페이지 불러오기 실패')
+      notify(message || '페이지 불러오기 실패')
     }
   }
 
-  const closeSettingsModal = () => {
+  const closeSettingsModal = async () => {
     if (settingsSaving) return
-    if (settingsDirty && !confirm('저장되지 않은 변경사항이 있습니다. 닫을까요?')) return
+    if (settingsDirty && !(await confirmAction('저장되지 않은 변경사항이 있습니다. 닫을까요?'))) return
 
     // 드래프트에서 생성한 objectURL 정리
     if (settingsTarget) {
@@ -705,10 +729,10 @@ export default function SchoolSettingsPage() {
       // 6) 재로드(저장된 값으로 드래프트 초기화)
       await loadDevicePages(schoolDeviceId)
       setSettingsDirty(false)
-      alert('저장 완료')
+      notify('저장 완료')
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e)
-      alert(message || '저장 실패')
+      notify(message || '저장 실패')
     } finally {
       setSettingsSaving(false)
     }
@@ -738,7 +762,7 @@ export default function SchoolSettingsPage() {
       setMemoTarget(null)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
-      alert(e.message || '메모 저장 실패')
+      notify(e.message || '메모 저장 실패')
     } finally {
       setMemoSaving(false)
     }
@@ -769,12 +793,17 @@ export default function SchoolSettingsPage() {
       setHeartRateMappingModalOpen(true)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
-      alert(e.message || '매핑 데이터 조회 실패')
+      notify(e.message || '매핑 데이터 조회 실패')
     }
   }
 
   // 하트 케어 ID 매핑 저장
   const saveHeartRateMappings = async () => {
+    if (!heartRateMappingValidation.ok) {
+      notify(heartRateMappingValidation.error)
+      return
+    }
+
     setHeartRateMappingSaving(true)
     try {
       const res = await fetch('/api/school/heart-rate-mappings', {
@@ -786,30 +815,28 @@ export default function SchoolSettingsPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || '저장 실패')
 
-      alert('Heart Care ID 매핑이 저장되었습니다.')
+      notify('Heart Care ID 매핑이 저장되었습니다.')
       setHeartRateMappingModalOpen(false)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
-      alert(e.message || '저장 실패')
+      notify(e.message || '저장 실패')
     } finally {
       setHeartRateMappingSaving(false)
     }
   }
 
   return (
-    <div className="space-y-6 text-white">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">디바이스 설정</h1>
-      </div>
+    <div className="console-page space-y-5">
+      <PageHeader title="디바이스 설정" eyebrow="분석·설정" />
 
-      <div className="bg-white/95 rounded-2xl shadow-xl overflow-hidden border border-white/40">
+      <div className="min-w-0">
         {loadingDevices ? (
-          <div className="px-4 py-6 text-center text-gray-500">불러오는 중...</div>
+          <div className="px-4 py-6 text-center text-muted-foreground">불러오는 중...</div>
         ) : rows.length === 0 ? (
-          <div className="px-4 py-6 text-center text-gray-500">배정된 디바이스가 없습니다.</div>
+          <div className="px-4 py-6 text-center text-muted-foreground">배정된 디바이스가 없습니다.</div>
         ) : (
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="py-2">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
               {(() => {
                 // 전체 목록에 대해 정렬: 디바이스명 -> created_at -> id
                 const sortedItems = [...rows].sort((a, b) => {
@@ -827,18 +854,11 @@ export default function SchoolSettingsPage() {
                   const ord = (counter.get(d.device_name) || 0) + 1
                   counter.set(d.device_name, ord)
 
-                  const contentHex = resolveHex(d.content_color_hex)
-                  const cardBg = contentHex || undefined
-                  const cardBorder = contentHex ? 'rgba(0,0,0,0.08)' : undefined
 
                   return (
                     <div
                       key={d.id}
-                      className="rounded-2xl border border-gray-200 bg-white p-5 text-gray-900 shadow-sm hover:shadow-md transition-shadow"
-                      style={{
-                        backgroundColor: cardBg,
-                        borderColor: cardBorder,
-                      }}
+                      className="border border-border bg-card p-5 text-foreground"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
@@ -848,36 +868,36 @@ export default function SchoolSettingsPage() {
                               <img
                                 src={d.device_icon_url}
                                 alt={`${d.device_name} 아이콘`}
-                                className="h-9 w-9 rounded-xl object-cover border border-gray-200"
+                                className="h-9 w-9 object-cover border border-border"
                               />
                             ) : (
-                              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 shadow-sm" />
+                              <div className="h-9 w-9" />
                             )}
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold truncate">
-                                {d.device_name} <span className="text-gray-600 font-semibold">#{ord}</span>
+                              <div className="text-[13px] font-semibold truncate">
+                                {d.device_name} <span className="text-muted-foreground font-semibold">#{ord}</span>
                               </div>
                               <div className="mt-0.5 flex items-center gap-2">
                                 {d.memo ? (
-                                  <div className="text-xs text-gray-600 truncate" title={d.memo}>
+                                  <div className="text-xs text-muted-foreground truncate" title={d.memo}>
                                     {d.memo}
                                   </div>
                                 ) : (
-                                  <div className="text-xs text-gray-500">메모 없음</div>
+                                  <div className="text-xs text-muted-foreground">메모 없음</div>
                                 )}
-                                <button
+                                <Button variant="outline"
                                   type="button"
                                   onClick={() => openMemoModal(d.id, `${d.device_name} #${ord}`, d.memo)}
-                                  className="px-2 py-0.5 rounded border border-gray-300 bg-white/80 text-gray-700 hover:bg-white text-[11px] shadow-sm"
+                                  className="px-2 py-0.5 border border-border bg-card text-foreground hover:bg-card text-xs"
                                 >
-                                  메모
-                                </button>
+                                  <StickyNote className="size-4" aria-hidden="true" /> 메모
+                                </Button>
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                          <button
+                          <Button variant="outline"
                             type="button"
                             onClick={async () => {
                               // "심박기록관리" 또는 "하트 케어" 콘텐츠인 경우 하트 케어 ID 매핑 모달 표시
@@ -889,10 +909,10 @@ export default function SchoolSettingsPage() {
                                 await openSettingsModal(d.id, `${d.device_name} #${ord}`)
                               }
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-sm"
+                            className="px-3 py-1.5 bg-primary hover:bg-primary text-primary-foreground text-[13px] font-medium"
                           >
-                            설정
-                          </button>
+                            <Settings2 className="size-4" aria-hidden="true" /> 설정
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -904,109 +924,97 @@ export default function SchoolSettingsPage() {
         )}
       </div>
 
-      {previewUrl && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setPreviewUrl(null)}
-          role="button"
-          tabIndex={-1}
-        >
-          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="absolute -top-10 right-0 px-3 py-1 rounded bg-white/90 text-gray-900 text-sm"
-              onClick={() => setPreviewUrl(null)}
-            >
-              닫기
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewUrl} alt="미리보기" className="w-full max-h-[80vh] object-contain rounded" />
-          </div>
-        </div>
-      )}
+      <Dialog open={!!previewUrl} onOpenChange={(open) => { if (!open) setPreviewUrl(null) }}>
+        <DialogContent className="bg-card sm:max-w-4xl" aria-describedby={undefined}>
+          <DialogTitle>이미지 미리보기</DialogTitle>
+          {previewUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previewUrl} alt="미리보기" className="max-h-[75dvh] w-full object-contain" />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* 설정 모달 */}
       {settingsModalOpen && settingsTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden text-gray-900 max-h-[85vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-200">
+        <Dialog open={settingsModalOpen} onOpenChange={(open) => { if (!open) void closeSettingsModal() }}>
+          <DialogContent showCloseButton={false} className="bg-card max-h-[90dvh] overflow-y-auto sm:max-w-3xl" aria-describedby={undefined}>
+            <div className="px-6 py-4 border-b border-border">
               {(() => {
                 const pages = pagesByDeviceId[settingsTarget.id] || []
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const pageFull = pages.length >= 8
+                                const pageFull = pages.length >= 8
                 return (
                   <>
                     {/* 1줄: 타이틀 + 저장(닫기 왼쪽) + 닫기 */}
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="text-lg font-semibold truncate">설정 - {settingsTarget.label}</div>
-                          <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full border bg-gray-100 text-gray-700 border-gray-200">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0 sm:flex-nowrap">
+                          <DialogTitle className="max-sm:w-full">설정 - {settingsTarget.label}</DialogTitle>
+                          <span className="shrink-0 text-xs px-2 py-0.5 border bg-muted text-foreground border-border">
                             {pages.length}/8
                           </span>
                           {settingsDirty && (
-                            <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+                            <span className="shrink-0 text-xs px-2 py-0.5 border bg-card text-foreground border-border">
                               저장 필요
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5">변경 후 “저장”을 눌러야 반영됩니다.</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">변경 후 “저장”을 눌러야 반영됩니다.</div>
                       </div>
 
-                      <div className="shrink-0 flex items-center gap-2">
-                        <button
+                      <div className="shrink-0 flex items-center gap-2 self-end sm:self-auto">
+                        <Button variant="outline"
                           type="button"
                           disabled={!settingsDirty || settingsSaving}
                           onClick={saveSettings}
                           className={[
-                            'px-3 py-1.5 rounded-xl text-sm font-semibold border shadow-sm disabled:opacity-60',
+                            'px-3 py-1.5 text-[13px] font-semibold border disabled:opacity-60',
                             settingsDirty
-                              ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-                              : 'bg-gray-100 text-gray-400 border-gray-200',
+                              ? 'bg-primary text-primary-foreground border-border hover:bg-primary'
+                              : 'bg-muted text-muted-foreground border-border',
                           ].join(' ')}
                         >
                           {settingsSaving ? '저장 중…' : '저장'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="outline"
                           type="button"
                           onClick={closeSettingsModal}
-                          className="px-3 py-1.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+                          className="px-3 py-1.5 bg-card border border-border hover:bg-muted text-foreground text-[13px] font-semibold"
                         >
                           닫기
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
                     {/* 2줄: 페이지 추가 버튼 (로딩 중엔 숨김) */}
                     {!settingsLoading && (
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
+                        <Button variant="outline"
                           type="button"
                           disabled={pageFull || settingsSaving}
                           onClick={() => addSettingsPage(settingsTarget.id, 'custom')}
                           className={[
-                            'px-3 py-2 rounded-xl text-sm font-semibold border shadow-sm disabled:opacity-60',
+                            'px-3 py-2 text-[13px] font-semibold border disabled:opacity-60',
                             pageFull
-                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                              : 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700',
+                              ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
+                              : 'bg-primary text-primary-foreground border-border hover:bg-primary',
                           ].join(' ')}
                         >
                           커스텀 페이지 추가
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="outline"
                           type="button"
                           disabled={pageFull || settingsSaving}
                           onClick={() => addSettingsPage(settingsTarget.id, 'images')}
                           className={[
-                            'px-3 py-2 rounded-xl text-sm font-semibold border shadow-sm disabled:opacity-60',
+                            'px-3 py-2 text-[13px] font-semibold border disabled:opacity-60',
                             pageFull
-                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                              : 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600',
+                              ? 'bg-muted text-muted-foreground border-border cursor-not-allowed'
+                              : 'bg-primary text-primary-foreground border-border hover:bg-primary',
                           ].join(' ')}
                         >
                           이미지 페이지 추가
-                        </button>
-                        {pageFull && <span className="text-xs text-gray-500 ml-1">페이지 최대 8개</span>}
+                        </Button>
+                        {pageFull && <span className="text-xs text-muted-foreground ml-1">페이지 최대 8개</span>}
                       </div>
                     )}
                   </>
@@ -1026,36 +1034,36 @@ export default function SchoolSettingsPage() {
                 return (
                   <div className="space-y-4">
                     {settingsLoading && (
-                      <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                      <div className="border border-dashed border-border p-8 text-center text-[13px] text-muted-foreground">
                         불러오는 중...
                       </div>
                     )}
 
                     {/* 페이지 탭 */}
                     {!settingsLoading && pages.length > 0 && (
-                      <div className="sticky top-0 z-30 -mx-6 px-6 pt-0 pb-3 bg-white/95 backdrop-blur border-b border-gray-200">
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-2 shadow-sm">
+                      <div className="sticky top-0 z-30 -mx-6 px-6 pt-0 pb-3 bg-card backdrop-blur border-b border-border">
+                        <div className="border border-border bg-muted p-2">
                           <div className="grid grid-cols-4 gap-2">
                             {pages.map((p, idx) => {
                               const selected = (active?.id || null) === p.id
                               return (
                                 <div key={p.id} className="relative w-full">
-                                  <button
+                                  <Button variant="outline"
                                     type="button"
                                     onClick={async () => {
                                       setActivePageId(p.id)
                                     }}
                                     className={[
-                                      'w-full px-3 py-2 rounded-2xl text-sm font-semibold border flex items-center gap-2 shadow-sm pr-9 justify-start',
+                                      'w-full px-3 py-2 text-[13px] font-semibold border flex items-center gap-2 pr-9 justify-start',
                                       selected
-                                        ? 'bg-gray-900 text-white border-gray-900'
-                                        : 'bg-white text-gray-800 border-gray-200 hover:bg-white',
+                                        ? 'bg-muted text-foreground border-border'
+                                        : 'bg-card text-foreground border-border hover:bg-card',
                                     ].join(' ')}
                                   >
                                     <span
                                       className={[
-                                        'inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-extrabold',
-                                        selected ? 'bg-white/15 text-white' : 'bg-gray-900 text-white',
+                                        'inline-flex items-center justify-center h-6 w-6 text-xs font-extrabold',
+                                        selected ? 'bg-card text-foreground' : 'bg-muted text-foreground',
                                       ].join(' ')}
                                     >
                                       {idx + 1}
@@ -1063,27 +1071,27 @@ export default function SchoolSettingsPage() {
                                     <span className="max-w-[140px] truncate" title={p.name || `${idx + 1}페이지`}>
                                       {p.name || `${idx + 1}페이지`}
                                     </span>
-                                  </button>
+                                  </Button>
 
-                                  <button
+                                  <Button variant="outline"
                                     type="button"
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                       e.preventDefault()
                                       e.stopPropagation()
-                                      if (!confirm(`${p.name || `${idx + 1}페이지`}를 삭제하시겠습니까?`)) return
+                                      if (!(await confirmAction(`${p.name || `${idx + 1}페이지`}를 삭제하시겠습니까?`))) return
                                       removeSettingsPage(deviceId, p.id)
                                     }}
                                     className={[
-                                      'absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded-full border text-xs font-bold',
+                                      'absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center border text-xs font-bold',
                                       selected
-                                        ? 'border-white/20 bg-white/10 text-white hover:bg-white/15'
-                                        : 'border-gray-200 bg-white/70 text-rose-600 hover:bg-rose-50',
+                                        ? 'border-border bg-card text-foreground hover:bg-card'
+                                        : 'border-border bg-card text-foreground hover:bg-card',
                                     ].join(' ')}
                                     aria-label={`${idx + 1}페이지 삭제`}
                                     title="페이지 삭제"
                                   >
-                                    <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-                                  </button>
+                                    <X className="h-4 w-4" aria-hidden="true" />
+                                  </Button>
                                 </div>
                               )
                             })}
@@ -1094,86 +1102,86 @@ export default function SchoolSettingsPage() {
 
                     {/* 페이지 내용 */}
                     {settingsLoading ? null : pages.length === 0 || !active ? (
-                      <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                      <div className="border border-dashed border-border p-8 text-center text-[13px] text-muted-foreground">
                         아직 생성된 페이지가 없습니다. 위 버튼으로 페이지를 추가해보세요.
                       </div>
                     ) : active.kind === 'custom' ? (
                       <div className="space-y-4">
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                        <div className="border border-border bg-muted p-4">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                             <div>
-                              <div className="font-semibold text-gray-900">페이지 이름</div>
+                              <div className="font-semibold text-foreground">페이지 이름</div>
                               <div className="mt-2">
-                                <input
+                                <Input
                                   value={active.name || ''}
                                   onChange={(e) => updateSettingsPageName(deviceId, active.id, e.target.value)}
-                                  className="w-full sm:w-[250px] rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
+                                  className="w-full sm:w-[250px] border border-border bg-card px-3 py-2 text-[13px]"
                                   maxLength={20}
                                 />
                               </div>
                             </div>
                             {!blockFull ? (
                               <div className="flex items-center gap-2">
-                                <button
+                                <Button variant="outline"
                                   type="button"
                                   onClick={() => addTextBlock(deviceId, active.id)}
-                                  className="px-3 py-2 rounded-xl bg-indigo-50/70 border border-indigo-200/70 hover:bg-indigo-50 text-indigo-800 text-sm font-semibold"
+                                  className="px-3 py-2 bg-card border border-border hover:bg-card text-foreground text-[13px] font-semibold"
                                 >
                                   텍스트 추가
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="outline"
                                   type="button"
                                   onClick={() => addImageBlock(deviceId, active.id)}
-                                  className="px-3 py-2 rounded-xl bg-amber-50/70 border border-amber-200/70 hover:bg-amber-50 text-amber-900 text-sm font-semibold"
+                                  className="px-3 py-2 bg-card border border-border hover:bg-card text-foreground text-[13px] font-semibold"
                                 >
                                   이미지 추가
-                                </button>
+                                </Button>
                               </div>
                             ) : (
-                              <div className="text-sm font-semibold text-gray-600">최대 수량(4개)에 도달했습니다.</div>
+                              <div className="text-[13px] font-semibold text-muted-foreground">최대 수량(4개)에 도달했습니다.</div>
                             )}
                           </div>
                         </div>
 
                         {activeBlocks.length === 0 ? (
-                          <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                          <div className="border border-dashed border-border p-8 text-center text-[13px] text-muted-foreground">
                             아직 등록된 컴포넌트가 없습니다. 위 버튼으로 추가해보세요.
                           </div>
                         ) : (
                           <div className="space-y-3">
                             {activeBlocks.map((b, idx) => (
-                              <div key={b.id} className="rounded-2xl border border-gray-200 bg-white p-4">
+                              <div key={b.id} className="border border-border bg-card p-4">
                                 <div className="flex items-center justify-between gap-3">
-                                  <div className="text-sm font-semibold text-gray-900">
+                                  <div className="text-[13px] font-semibold text-foreground">
                                     {idx + 1}. {b.type === 'text' ? '텍스트' : '이미지'} 컴포넌트
                                   </div>
-                                  <button
+                                  <Button variant="outline"
                                     type="button"
                                     onClick={() => removeBlock(deviceId, active.id, b.id)}
-                                    className="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 text-sm font-semibold"
+                                    className="px-3 py-1.5 bg-card hover:bg-card text-foreground text-[13px] font-semibold"
                                   >
                                     삭제
-                                  </button>
+                                  </Button>
                                 </div>
 
                                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div className="flex flex-col sm:flex-row gap-3 sm:items-start md:col-span-2">
                                     <div className="space-y-1.5 w-full sm:basis-2/5">
-                                      <div className="text-xs font-semibold text-gray-700">소제목</div>
-                                      <input
+                                      <div className="text-xs font-semibold text-foreground">소제목</div>
+                                      <Input
                                         value={b.subtitle}
                                         maxLength={10}
                                         onChange={(e) => updateBlock(deviceId, active.id, b.id, { subtitle: e.target.value })}
-                                        className="w-full rounded-xl border border-gray-300 px-3 py-1.5 text-sm"
-                                        placeholder="소제목"
+                                        className="w-full border border-border px-3 py-1.5 text-[13px]"
+                                        placeholder="소제목" aria-label="소제목"
                                       />
                                     </div>
                                     <div className="space-y-1.5 w-full sm:basis-3/5">
-                                      <div className="text-xs font-semibold text-gray-700">본문</div>
-                                      <textarea
+                                      <div className="text-xs font-semibold text-foreground">본문</div>
+                                      <textarea aria-label="내용"
                                         value={b.body}
                                         onChange={(e) => updateBlock(deviceId, active.id, b.id, { body: e.target.value })}
-                                        className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm resize-none"
+                                        className="w-full border border-border px-3 py-2 text-[13px] resize-none"
                                         rows={3}
                                         placeholder="본문"
                                       />
@@ -1182,7 +1190,7 @@ export default function SchoolSettingsPage() {
                                 </div>
 
                                 {b.type === 'image' && (
-                                  <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                                  <div className="mt-3 border border-border bg-muted p-3">
                                     {(() => {
                                       const expanded = !!expandedImageBlocks[b.id]
                                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1200,33 +1208,33 @@ export default function SchoolSettingsPage() {
                                         <>
                                           <div className="flex flex-wrap items-center justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
-                                              <div className="text-sm font-semibold text-gray-900">이미지</div>
+                                              <div className="text-[13px] font-semibold text-foreground">이미지</div>
                                               <span
                                                 className={[
-                                                  'text-[11px] px-2 py-0.5 rounded-full border',
+                                                  'text-xs px-2 py-0.5 border',
                                                   hasImage
-                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                    : 'bg-gray-100 text-gray-700 border-gray-200',
+                                                    ? 'bg-card text-foreground border-border'
+                                                    : 'bg-muted text-foreground border-border',
                                                 ].join(' ')}
                                               >
                                                 {hasImage ? '첨부됨' : '없음'}
                                               </span>
                                               {hasImage && (
-                                                <button
+                                                <Button variant="outline"
                                                   type="button"
                                                   onClick={() => {
                                                     if (full) setPreviewUrl(full)
                                                   }}
-                                                  className="text-xs text-indigo-700 hover:text-indigo-800 font-semibold truncate max-w-[180px]"
+                                                  className="text-xs text-foreground hover:text-foreground font-semibold truncate max-w-[180px]"
                                                   title={pendingFile?.name || b.image_name || '첨부 이미지'}
                                                 >
                                                   {pendingFile?.name || b.image_name || '첨부 이미지'}
-                                                </button>
+                                                </Button>
                                               )}
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                              <input
+                                              <Input
                                                 ref={(el) => {
                                                   customImageFileInputRefs.current[b.id] = el
                                                 }}
@@ -1241,45 +1249,45 @@ export default function SchoolSettingsPage() {
                                                   e.target.value = ''
                                                 }}
                                               />
-                                              <button
+                                              <Button variant="outline"
                                                 type="button"
                                                 onClick={() => customImageFileInputRefs.current[b.id]?.click()}
-                                                className="px-3 py-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold"
+                                                className="px-3 py-1.5 bg-muted hover:bg-muted text-foreground text-[13px] font-semibold"
                                               >
                                                 이미지 선택
-                                              </button>
+                                              </Button>
                                               {hasImage && (
-                                                <button
+                                                <Button variant="outline"
                                                   type="button"
                                                   onClick={() => clearBlockImageDraft(deviceId, active.id, b.id)}
-                                                  className="px-3 py-1.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-sm font-semibold"
+                                                  className="px-3 py-1.5 bg-card border border-border hover:bg-muted text-[13px] font-semibold"
                                                 >
                                                   초기화
-                                                </button>
+                                                </Button>
                                               )}
-                                              <button
+                                              <Button variant="outline"
                                                 type="button"
                                                 onClick={() => setExpandedImageBlocks((prev) => ({ ...prev, [b.id]: !expanded }))}
-                                                className="px-3 py-1.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-sm font-semibold"
+                                                className="px-3 py-1.5 bg-card border border-border hover:bg-muted text-[13px] font-semibold"
                                               >
                                                 {expanded ? '첨부 영역 닫기' : '첨부 영역 열기'}
-                                              </button>
+                                              </Button>
                                             </div>
                                           </div>
 
                                           {/* 접힘 상태에서는 공간 최소화 */}
                                           {expanded && (
                                             <>
-                                              <div className="text-xs text-gray-600 mt-2">
+                                              <div className="text-xs text-muted-foreground mt-2">
                                                 드래그 앤 드롭 또는 버튼으로 파일을 선택하세요.
                                               </div>
 
                                               <div
                                                 className={[
-                                                  'mt-2 rounded-2xl border border-dashed p-3',
+                                                  'mt-2 border border-dashed p-3',
                                                   customImageDragOverBlockId === b.id
-                                                    ? 'border-indigo-500 bg-indigo-50'
-                                                    : 'border-gray-300 bg-white',
+                                                    ? 'border-border bg-card'
+                                                    : 'border-border bg-card',
                                                 ].join(' ')}
                                                 onDragOver={(e) => {
                                                   e.preventDefault()
@@ -1300,31 +1308,31 @@ export default function SchoolSettingsPage() {
                                                 }}
                                               >
                                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                                                  <div className="text-sm text-gray-700">
+                                                  <div className="text-[13px] text-foreground">
                                                     <div className="font-semibold">이미지를 여기로 드래그</div>
-                                                    <div className="text-xs text-gray-500 mt-0.5">이미지 파일만 선택됩니다.</div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5">이미지 파일만 선택됩니다.</div>
                                                   </div>
                                                 </div>
                                               </div>
 
                                               <div className="mt-2">
                                                 {thumb || full ? (
-                                                  <button
+                                                  <Button variant="outline"
                                                     type="button"
                                                     onClick={() => {
                                                       if (full) setPreviewUrl(full)
                                                     }}
-                                                    className="block w-full"
+                                                    className="block h-auto w-full p-0"
                                                   >
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                                     <img
                                                       src={thumb || full || ''}
                                                       alt="첨부 이미지 미리보기"
-                                                      className="w-full max-h-40 object-contain rounded-xl border border-gray-200 bg-white"
+                                                      className="w-full max-h-40 object-contain border border-border bg-card"
                                                     />
-                                                  </button>
+                                                  </Button>
                                                 ) : (
-                                                  <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
+                                                  <div className="border border-dashed border-border bg-card p-4 text-center text-[13px] text-muted-foreground">
                                                     첨부된 이미지가 없습니다.
                                                   </div>
                                                 )}
@@ -1358,11 +1366,11 @@ export default function SchoolSettingsPage() {
                         const full = pendingClear ? null : pendingPreview || active.image_full_url || active.image_thumb_url || null
 
                         return (
-                          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                          <div className="border border-border bg-muted p-4">
                             <div className="flex items-center justify-between gap-3">
-                              <div className="text-sm font-semibold text-gray-900">이미지 페이지</div>
+                              <div className="text-[13px] font-semibold text-foreground">이미지 페이지</div>
                               <div className="flex items-center gap-2">
-                                <input
+                                <Input
                                   ref={(el) => {
                                     pageImageFileInputRefs.current[pageId] = el
                                   }}
@@ -1379,46 +1387,46 @@ export default function SchoolSettingsPage() {
                                   className="hidden"
                                 />
 
-                                <button
+                                <Button variant="outline"
                                   type="button"
                                   disabled={isUploading}
                                   onClick={() => pageImageFileInputRefs.current[pageId]?.click()}
                                   className={[
-                                    'px-3 py-1.5 rounded-xl text-sm font-semibold border shadow-sm disabled:opacity-60',
+                                    'px-3 py-1.5 text-[13px] font-semibold border disabled:opacity-60',
                                     hasImage
-                                      ? 'bg-amber-50/70 border-amber-200/70 text-amber-900 hover:bg-amber-50'
-                                      : 'bg-gray-900 border-gray-900 text-white hover:bg-gray-800',
+                                      ? 'bg-card border-border text-foreground hover:bg-card'
+                                      : 'bg-muted border-border text-foreground hover:bg-muted',
                                   ].join(' ')}
                                 >
                                   {isUploading ? '처리 중…' : hasImage ? '이미지 변경' : '이미지 1장 업로드'}
-                                </button>
+                                </Button>
 
                                 {hasImage && (
-                                  <button
+                                  <Button variant="outline"
                                     type="button"
                                     disabled={isUploading}
                                     onClick={() => clearPageImageDraft(deviceId, pageId)}
-                                    className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 text-sm font-semibold disabled:opacity-60"
+                                    className="px-3 py-1.5 bg-card hover:bg-card text-foreground text-[13px] font-semibold disabled:opacity-60"
                                   >
                                     삭제
-                                  </button>
+                                  </Button>
                                 )}
                               </div>
                             </div>
 
                             {!hasImage ? (
-                              <div className="mt-3 rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+                              <div className="mt-3 border border-dashed border-border p-6 text-center text-[13px] text-muted-foreground">
                                 아직 업로드된 이미지가 없습니다.
                               </div>
                             ) : (
                               <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                <div className="group relative rounded border border-gray-200 bg-white overflow-hidden">
-                                  <button
+                                <div className="group relative border border-border bg-card overflow-hidden">
+                                  <Button variant="outline"
                                     type="button"
                                     onClick={() => {
                                       if (full) setPreviewUrl(full)
                                     }}
-                                    className="block w-full"
+                                    className="block h-auto w-full p-0"
                                     title={pendingFile?.name || active.image_name || '이미지'}
                                   >
                                     {thumb ? (
@@ -1430,11 +1438,11 @@ export default function SchoolSettingsPage() {
                                         loading="lazy"
                                       />
                                     ) : (
-                                      <div className="h-24 w-full flex items-center justify-center text-xs text-gray-400">미리보기 불가</div>
+                                      <div className="h-24 w-full flex items-center justify-center text-xs text-muted-foreground">미리보기 불가</div>
                                     )}
-                                  </button>
-                                  <div className="absolute inset-x-0 bottom-0 p-1.5 bg-white/80 backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="text-[11px] text-gray-600 truncate min-w-0" title={pendingFile?.name || active.image_name || ''}>
+                                  </Button>
+                                  <div className="absolute inset-x-0 bottom-0 p-1.5 bg-card backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="text-xs text-muted-foreground truncate min-w-0" title={pendingFile?.name || active.image_name || ''}>
                                       {pendingFile?.name || active.image_name || '이미지'}
                                     </div>
                                   </div>
@@ -1444,8 +1452,8 @@ export default function SchoolSettingsPage() {
 
                             <div
                               className={[
-                                'mt-4 rounded-2xl border border-dashed p-4',
-                                isDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-white',
+                                'mt-4 border border-dashed p-4',
+                                isDragOver ? 'border-border bg-card' : 'border-border bg-card',
                                 isUploading ? 'opacity-60' : '',
                               ].join(' ')}
                               onDragOver={(e) => {
@@ -1465,24 +1473,24 @@ export default function SchoolSettingsPage() {
                               }}
                             >
                               <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                                <div className="text-sm text-gray-700">
+                                <div className="text-[13px] text-foreground">
                                   <div className="font-semibold">
                                     {hasImage ? '이미지가 이미 등록되어 있습니다 (1장만 유지)' : '이미지를 여기로 드래그해서 업로드'}
                                   </div>
-                                  <div className="text-xs text-gray-500 mt-1">
+                                  <div className="text-xs text-muted-foreground mt-1">
                                     {hasImage ? '드래그/선택하면 기존 이미지가 변경됩니다.' : '또는 버튼을 눌러 파일을 선택하세요.'}
                                   </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  <button
+                                  <Button variant="outline"
                                     type="button"
                                     disabled={isUploading}
                                     onClick={() => pageImageFileInputRefs.current[pageId]?.click()}
-                                    className="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold shadow-sm disabled:opacity-60"
+                                    className="px-4 py-2 bg-muted hover:bg-muted text-foreground text-[13px] font-semibold disabled:opacity-60"
                                   >
                                     {isUploading ? '처리 중…' : hasImage ? '이미지 변경' : '이미지 1장 업로드'}
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             </div>
@@ -1494,127 +1502,146 @@ export default function SchoolSettingsPage() {
                 )
               })()}
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* 메모 모달 */}
       {memoModalOpen && memoTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 text-gray-900">
+        <Dialog open={memoModalOpen} onOpenChange={(open) => { if (!open && !memoSaving) { setMemoModalOpen(false); setMemoTarget(null) } }}>
+          <DialogContent showCloseButton={false} className="bg-card max-h-[90dvh] overflow-y-auto sm:max-w-md" aria-describedby={undefined}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">메모 - {memoTarget.label}</h3>
-              <button
+              <DialogTitle>메모 - {memoTarget.label}</DialogTitle>
+              <Button variant="outline"
                 type="button"
                 onClick={() => {
                   if (memoSaving) return
                   setMemoModalOpen(false)
                   setMemoTarget(null)
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 닫기
-              </button>
+              </Button>
             </div>
             <textarea
-              className="w-full border border-gray-300 rounded-xl px-3 py-2 text-gray-900"
+              className="w-full border border-border px-3 py-2 text-foreground"
               rows={4}
               value={memoText}
               onChange={(e) => setMemoText(e.target.value)}
-              placeholder="메모를 입력하세요"
+              placeholder="메모를 입력하세요" aria-label="메모를 입력하세요"
             />
             <div className="flex justify-end gap-2 mt-4">
-              <button
+              <Button variant="outline"
                 type="button"
                 onClick={() => {
                   if (memoSaving) return
                   setMemoModalOpen(false)
                   setMemoTarget(null)
                 }}
-                className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800"
+                className="px-4 py-2 bg-muted hover:bg-muted text-foreground"
               >
                 취소
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 type="button"
                 disabled={memoSaving}
                 onClick={saveMemo}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-60"
+                className="px-4 py-2 bg-primary hover:bg-primary text-primary-foreground disabled:opacity-60"
               >
                 저장
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* 하트 케어 ID 매핑 모달 */}
       {heartRateMappingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col text-gray-900">
-            <div className="px-6 py-4 border-b border-gray-200">
+        <Dialog open={heartRateMappingModalOpen} onOpenChange={(open) => { if (!open && !heartRateMappingSaving) setHeartRateMappingModalOpen(false) }}>
+          <DialogContent showCloseButton={false} className="bg-card max-h-[90dvh] overflow-y-auto sm:max-w-4xl" aria-describedby={undefined}>
+            <div className="px-6 py-4 border-b border-border">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Heart Care ID 설정 - {heartRateMappingLabel}</h3>
-                <button
+                <DialogTitle>Heart Care ID 설정 - {heartRateMappingLabel}</DialogTitle>
+                <Button variant="outline" aria-label="닫기"
                   type="button"
                   onClick={() => {
                     if (heartRateMappingSaving) return
                     setHeartRateMappingModalOpen(false)
                   }}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">1~30번 학생의 Heart Care 디바이스 ID를 입력하세요.</p>
+              <p className="text-xs text-muted-foreground mt-1">1~30번 측정 슬롯은 각 학급의 같은 번호 학생에게 연결됩니다. 심박계에 표시된 7자리 숫자를 앞자리 0까지 그대로 입력하세요.</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {heartRateMappings.map((mapping) => (
+                {heartRateMappings.map((mapping) => {
+                  const hasInvalidFormat = mapping.device_id !== '' && !isCanonicalHeartRateDeviceId(mapping.device_id)
+                  const isDuplicate = mapping.device_id !== '' && duplicateHeartRateDeviceIds.has(mapping.device_id)
+                  const isInvalid = hasInvalidFormat || isDuplicate
+                  const errorId = `heart-rate-id-error-${mapping.student_no}`
+                  return (
                   <div key={mapping.student_no} className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-gray-700">
-                      {mapping.student_no}번
-                    </label>
-                    <input
+                    <Label htmlFor={`heart-rate-id-${mapping.student_no}`} className="text-xs font-semibold text-foreground">
+                      {mapping.student_no}번 슬롯
+                    </Label>
+                    <Input
+                      id={`heart-rate-id-${mapping.student_no}`}
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{7}"
                       value={mapping.device_id}
+                      aria-invalid={isInvalid}
+                      aria-describedby={isInvalid ? errorId : undefined}
                       onChange={(e) => {
                         const newMappings = [...heartRateMappings]
                         const idx = mapping.student_no - 1
                         newMappings[idx].device_id = e.target.value
                         setHeartRateMappings(newMappings)
                       }}
-                      className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="디바이스 ID"
+                      className={`border px-2 py-1.5 text-[13px] ${isInvalid
+                        ? 'border-destructive bg-destructive/5'
+                        : 'border-border'
+                        }`}
+                      placeholder="0000000"
                     />
+                    {isInvalid && (
+                      <span id={errorId} className="text-[11px] font-medium text-destructive">
+                        {hasInvalidFormat ? '7자리 숫자를 입력하세요.' : '다른 측정 슬롯과 중복된 ID입니다.'}
+                      </span>
+                    )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
-              <button
+            <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
+              <Button variant="outline"
                 type="button"
                 onClick={() => {
                   if (heartRateMappingSaving) return
                   setHeartRateMappingModalOpen(false)
                 }}
-                className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800"
+                className="px-4 py-2 bg-muted hover:bg-muted text-foreground"
               >
                 취소
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 type="button"
-                disabled={heartRateMappingSaving}
+                disabled={heartRateMappingSaving || hasInvalidHeartRateMapping}
                 onClick={saveHeartRateMappings}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-60"
+                className="px-4 py-2 bg-primary hover:bg-primary text-primary-foreground disabled:opacity-60"
               >
                 {heartRateMappingSaving ? '저장 중...' : '저장'}
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

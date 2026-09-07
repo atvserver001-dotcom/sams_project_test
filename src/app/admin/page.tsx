@@ -4,4 +4,3 @@ export default function AdminHome() {
   redirect('/admin/accounts')
 }
 
-

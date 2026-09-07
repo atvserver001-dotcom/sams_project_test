@@ -1,0 +1,1054 @@
+[
+  {
+    "path": ".vercelignore",
+    "sha256": "C29C8C71AFDD7FD92CAC26B0DACA1B4E9FB98BC8EDB9EF6F919F854611D42233"
+  },
+  {
+    "path": "components.json",
+    "sha256": "87EAD70F748D208A8C9C77CC1061D31AF94293A017E488756C862C0AC46A6269"
+  },
+  {
+    "path": "eslint.config.mjs",
+    "sha256": "7D1248DD8AC16E2A0942E2A0A285E853E283E18B6593D9D4A2D515E933EE06AC"
+  },
+  {
+    "path": "next-env.d.ts",
+    "sha256": "79BD4E276E94F988297B07F92D7523FFFEC91BC204A4DC73A08D6D2E61DD367C"
+  },
+  {
+    "path": "next.config.ts",
+    "sha256": "302D37D051E0BEA4EC8E08F83214ACB30712445AA9A20A190F95741CA0B31CFE"
+  },
+  {
+    "path": "package-lock.json",
+    "sha256": "E56FCCE8E7B1BA9196E1417274D527DAD2D16452BE1CC517992F81B7F66ACE24"
+  },
+  {
+    "path": "package.json",
+    "sha256": "1246A72EECC2D8766E164D2FAA1039CE77A47872AEDFFFC792920A491563D4AA"
+  },
+  {
+    "path": "postcss.config.mjs",
+    "sha256": "C0B4A123AE7B1F40069FD2183841248C4AF91F3153C4A2334B19E3BBC2017802"
+  },
+  {
+    "path": "public/file.svg",
+    "sha256": "2B67812C325C199A02536CDBEEA0C593A72F707D323B72EE3E08DBAB06753BD4"
+  },
+  {
+    "path": "public/globe.svg",
+    "sha256": "B614B9BF183925957661AC851498FE1D8029FD43A62FBFED86F9E2624A57E7CF"
+  },
+  {
+    "path": "public/image/logo_atv.svg",
+    "sha256": "44FCCC33E8256EBB23EB0E46CC4B358F8F732D9538D14F8BFEE978BF2D6EE13C"
+  },
+  {
+    "path": "public/image/logo_atvcms.svg",
+    "sha256": "641ADAB6DEAC1B2D65A7CA15322B4E5AD177584CDAD23DFBD74FC65BC9924CBB"
+  },
+  {
+    "path": "public/image/Spopark_Outline_Red.svg",
+    "sha256": "4A8A81121E2E254FD79FE391E479E35099A36B2A421A6D70416E582D00961A0B"
+  },
+  {
+    "path": "public/next.svg",
+    "sha256": "55995DFAD6ECB4945A1E856DDCA03C5E16AA5BF13FD21B4DF6A74AE79357BCFC"
+  },
+  {
+    "path": "public/vercel.svg",
+    "sha256": "F081337B2FEE635B455B63275406A3E7F39D6A014E25AD90DAB5A67E62A12AC4"
+  },
+  {
+    "path": "public/window.svg",
+    "sha256": "644768C4AAEB4767BCE293344EEB0C125FB804A94D801440424072202D85E3A1"
+  },
+  {
+    "path": "scripts/check_student_gender.js",
+    "sha256": "A3A00CD34749581EFC2CE6F2A6E372534E851CCE4AA833C27704FEF7DC0316D4"
+  },
+  {
+    "path": "scripts/check-admin-preview.mjs",
+    "sha256": "198D4BB3D8C9A9F40EF217796BE654703315DF06245A52D9A5D93C273D291172"
+  },
+  {
+    "path": "scripts/check-chart-raster.mjs",
+    "sha256": "CDEC7960BB1B9927E0EC6B73CEFE8D3F8299A35A3127C80ACCDCD8EFEF03F8B1"
+  },
+  {
+    "path": "scripts/check-class-report.mjs",
+    "sha256": "ED0094BB4EDF25790648D441F1F44BA0729531C4C4678BBFB5AB94ADB76C719C"
+  },
+  {
+    "path": "scripts/check-personal-report.mjs",
+    "sha256": "5A71E1BADB707FF282CD8F3CD5330E1F67BE2AA076BE0FD3236D9524038556E6"
+  },
+  {
+    "path": "scripts/check-school-preview.mjs",
+    "sha256": "5BE7C1929DB88CE23D8E48B2310D87D7F9D4C2D5C5D34712232B14BE76AEBF94"
+  },
+  {
+    "path": "scripts/env/supabase.schema-sync.env.example",
+    "sha256": "7A0F6AEA80F153BAA38C288658043EF8C7B156E5267E50149BEE6B82621063D9"
+  },
+  {
+    "path": "scripts/env/supabase.sync.env.example",
+    "sha256": "A0BFA652A7581C7FA939087C854CBABB68F9841A32F081BF6EC5C4DF1447C284"
+  },
+  {
+    "path": "scripts/fill_paps_dummy.js",
+    "sha256": "8AD15E125CF67677354DE69751D09710523CFE8509D8A9E404C70D93DDDBA287"
+  },
+  {
+    "path": "scripts/insert_paps_dummy_data.js",
+    "sha256": "AE63335435AEFA81DD4C14DFA440D36DE561DE0F6434056E8F104485EEA00343"
+  },
+  {
+    "path": "scripts/mcp-smoke-test.ps1",
+    "sha256": "5C8803DCF9E2420AB31156B27F1DDF6291521FE3A2CAF82BD7AC6F06E19405B4"
+  },
+  {
+    "path": "scripts/mcp.err.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "path": "scripts/mcp.out.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "path": "scripts/preview-admin.mjs",
+    "sha256": "117F74F2EAC3AD059B45DE53006E80BA022DB4C2F4FAFDBAC7AE70CE516E157C"
+  },
+  {
+    "path": "scripts/preview-review.mjs",
+    "sha256": "45ACFF19E72EA712D501A055697AAD86FD517378BE4C52CF920F88A31AE604A7"
+  },
+  {
+    "path": "scripts/preview-school.mjs",
+    "sha256": "955191302DF1A5709ECB8060022975F8975992893A45BC39F47F5AD82CABC970"
+  },
+  {
+    "path": "scripts/sql/add_index_schools_recognition_key.sql",
+    "sha256": "908BA60BEC1CF80210CD6032D9C29D3048AFFDEDF2260C2DED69EB9526E7CD43"
+  },
+  {
+    "path": "scripts/sql/alter_contents_add_color_key.sql",
+    "sha256": "1501ED7CDD07B30C0D2D9C66A02210AF79139AE922916E88413289C90B6EBEEA"
+  },
+  {
+    "path": "scripts/sql/alter_devices_add_icon_path.sql",
+    "sha256": "82DACE2A30F9D6C2476C063C410BA783812DD5E720A7B4AA64C21132FB0EB049"
+  },
+  {
+    "path": "scripts/sql/alter_devices_add_page.sql",
+    "sha256": "2B92751E420AA4DDA17E2CE81982E0D570C174C0A838D939CF00C245EA0AF291"
+  },
+  {
+    "path": "scripts/sql/alter_devices_drop_page.sql",
+    "sha256": "D7E13B35AA3652A1B3656B7B0DF01BB88E4BD16A6904E6DAEC8C0ABE82D23B52"
+  },
+  {
+    "path": "scripts/sql/alter_exercise_records_fk_cascade.sql",
+    "sha256": "71CF4D01C2183293AD748072BECB89AF5C50FD00B87338006F8C294752CCFA31"
+  },
+  {
+    "path": "scripts/sql/alter_school_devices_add_memo.sql",
+    "sha256": "FDB00460FF88CC4CDCBC6B3CE06299048D1F3A4F9E7B207F8D9C03A0621459F7"
+  },
+  {
+    "path": "scripts/sql/create_exercise_ingest_events.sql",
+    "sha256": "58C6291784EEA79635478933DD3DEAF9F606E4EDC28FA8CC8B7E0503C2ABBC91"
+  },
+  {
+    "path": "scripts/sql/create_exercise_records.sql",
+    "sha256": "CE87D3DD3D5D91EE793E50DAC31F2E243A6378F8C90BF43CF67D9204746095FF"
+  },
+  {
+    "path": "scripts/sql/create_function_save_student_slot.sql",
+    "sha256": "58C73514C70F492B7C56764F77EB86591DA9D8E8928C6A82CDF8D1E5E5018FC7"
+  },
+  {
+    "path": "scripts/sql/create_function_upsert_exercise_record_by_key_idem.sql",
+    "sha256": "5349D8EBC391B7A561AE4456E9F904744DB6A9EA010C00072F84D04F01B0BC44"
+  },
+  {
+    "path": "scripts/sql/create_function_upsert_exercise_records_batch.sql",
+    "sha256": "CA85C9A02AEC934275EEEEBDD5DB973CEF32E9248E17B8C40DB3BE5E181A39CC"
+  },
+  {
+    "path": "scripts/sql/create_heart_rate_records.sql",
+    "sha256": "3D7395CD5D7C8F7D42CF38E1D294C00D3B09CA224D7F8619EA54CCA6D07267B4"
+  },
+  {
+    "path": "scripts/sql/create_operator_accounts.sql",
+    "sha256": "880DE3AD0BF37F0789A94783408AC094DB1E189A55BB25BE6D59E31741C072DB"
+  },
+  {
+    "path": "scripts/sql/create_school_device_pages.sql",
+    "sha256": "34E995950E7320ADC73E83F6796C3D35E481E50CF8C3211522826B411F9A917F"
+  },
+  {
+    "path": "scripts/sql/create_school_heart_rate_mappings.sql",
+    "sha256": "1EE1CF9E76C641933DF490481E6CA47F3DA5B42C715E834CA7F6B9DEA05349FB"
+  },
+  {
+    "path": "scripts/sql/create_schools_and_devices.sql",
+    "sha256": "FD90F34DA1C38A5AE824B2911A0618A27CF41EE768697F9080522FF681B1C7A5"
+  },
+  {
+    "path": "scripts/sql/create_students.sql",
+    "sha256": "D636C4F1C30732E797491D7AC4DC9BB197B66EECE78F98C608742BFA09721C5E"
+  },
+  {
+    "path": "scripts/sql/generated/prepare_prod_from_test_public_report.md",
+    "sha256": "B0F570EBC9B414EB241FBCBC55AE6AA65030E39BCE6FE9A6755043C3CAFD07D0"
+  },
+  {
+    "path": "scripts/sql/generated/prepare_prod_from_test_public.sql",
+    "sha256": "694A1736EE5EA3F177ECF182E379231FE0F31485200971D21776902687213243"
+  },
+  {
+    "path": "scripts/sql/generated/prod_public_functions_and_triggers.sql",
+    "sha256": "F562862F65C536D89740BC9B63795FF6B56032619247FFEDEC4A5A2FC24DE44A"
+  },
+  {
+    "path": "scripts/sql/generated/prod_public_functions.sql",
+    "sha256": "DFFA8D44D446EC432A2C93869FBFA1246ABF0240C1D1BD2AF23FD652E3B3D0D1"
+  },
+  {
+    "path": "scripts/sql/generated/prod_public_triggers.sql",
+    "sha256": "BC41AF3F1EC499EE00BA698D83B3D06087587D2149B36B513D83A5AD1CBE0D57"
+  },
+  {
+    "path": "scripts/sql/seed_sample_class_exercises.sql",
+    "sha256": "745FCF4160BA2632A08DA58EA619316CA62EC258CF37260F8627001D850F9840"
+  },
+  {
+    "path": "scripts/SUPABASE_PREPARE_PROD_SCHEMA_FROM_TEST.md",
+    "sha256": "03E27F444CF9C52B75476BB24B2C4D2A08A16827307179D34C04B76CBAD244E8"
+  },
+  {
+    "path": "scripts/SUPABASE_SYNC_FUNCTIONS_TRIGGERS.md",
+    "sha256": "07318F83AD9FDD782D7F8BE4B11D105CFC21E62D4E678A1FBE3AD9CF7B7F638B"
+  },
+  {
+    "path": "scripts/supabase-health.js",
+    "sha256": "8F953AC4CF087465E3429AF9171797135A693348D100969B35413E0CB83107A9"
+  },
+  {
+    "path": "scripts/supabase-prepare-prod-schema-from-test.js",
+    "sha256": "78480481F58778EC019560F3B0F13346F7EB09B74558B7A7C769C4253710B25A"
+  },
+  {
+    "path": "scripts/supabase-sync-functions-triggers.js",
+    "sha256": "5695A843D3BACCC3FF881B8688AC3945942AE2D57E30C06E7BF234796BC77353"
+  },
+  {
+    "path": "scripts/test-chart-soak.mjs",
+    "sha256": "A1BAB62E876230396DB2C748C33C3E5513A827C2BAB18DF4F04BC3E62771BAF0"
+  },
+  {
+    "path": "scripts/test-signup.js",
+    "sha256": "75C611A5123B3E5B1CD196428E5CEEA817903F9D251AD2E5740835A4705CBA60"
+  },
+  {
+    "path": "scripts/verify_paps_data.js",
+    "sha256": "50DB35BFD989400EFFE1635799149A02258CEF3161A0EF60E2A5C701589C25DF"
+  },
+  {
+    "path": "scripts/verify-development-deployment.mjs",
+    "sha256": "342F922E074F5322F2987C12075DE5C573C2AF149C36F6CBA0768A1C4D4D206C"
+  },
+  {
+    "path": "src/app/admin/accounts/page.tsx",
+    "sha256": "030626C6A5404B09E89D2D05A34A169AFD7AE72F20B61C027BB17FB40D5BA9D0"
+  },
+  {
+    "path": "src/app/admin/devices/page.tsx",
+    "sha256": "DC485EEDE5307178443061B8F38A0C9CBA7D9B05B94E0ABECCDA74CC0BA23AA5"
+  },
+  {
+    "path": "src/app/admin/heart-rate-test/page.tsx",
+    "sha256": "AC2C67F723BB3BBC4F2F204662F9B0A6D3CE687B7EFA3EEB0CC9E8F660E59468"
+  },
+  {
+    "path": "src/app/admin/layout.tsx",
+    "sha256": "F7A8A4D5D4D69122DC88BF3E73B81A4E673618DF8C8A8326F305C1C15539D062"
+  },
+  {
+    "path": "src/app/admin/page.tsx",
+    "sha256": "D4D2596F02ED7395F1CFDD7A521CFEFC9CA3C243383F9A633B7B6EF4C8C4DF23"
+  },
+  {
+    "path": "src/app/admin/school-details/page.tsx",
+    "sha256": "461745348ED8AECFDBCD40752677F88A61B2087784A5E5F270C4B04E9C2A8AD9"
+  },
+  {
+    "path": "src/app/admin/schools/page.tsx",
+    "sha256": "03F4ACB9690A2DF646BBBEB0588C3238B55C35C6FBF44D6A3B57CED9ECD33383"
+  },
+  {
+    "path": "src/app/api/admin/accounts/[id]/route.ts",
+    "sha256": "3AEFBA161DCA58030C839A6C6428E3B63694007BAD533951C08457819E2E40A0"
+  },
+  {
+    "path": "src/app/api/admin/accounts/route.ts",
+    "sha256": "5EE25641C5BF620F2DBBC0C6653185961D991A67AC3C7D7CE01990F10028E4F5"
+  },
+  {
+    "path": "src/app/api/admin/act-as/route.ts",
+    "sha256": "89605995C7674CF11AA58204CDF09AB0C116E9527E6EB8399E5C467EB56B123B"
+  },
+  {
+    "path": "src/app/api/admin/contents/[id]/route.ts",
+    "sha256": "BB3E85B7E26F71551BE8705F4A993337FAD09FA7ECDCB275139DB45C139AF665"
+  },
+  {
+    "path": "src/app/api/admin/contents/route.ts",
+    "sha256": "1EE5D6F7F7909832B388C149CC0ED68C21F206121AA8DDE5A41BF578A078B11D"
+  },
+  {
+    "path": "src/app/api/admin/devices/[id]/icon/route.ts",
+    "sha256": "86AA5D59E557F0CB183B8F361FBE2AC3AAFCD41545592BB9D8BBE5BCEA3AC5D7"
+  },
+  {
+    "path": "src/app/api/admin/devices/[id]/route.ts",
+    "sha256": "551367ACCC3F08678B75783C50C1B64B7E1AF2D7E6CE60B9EEB58D2B74D7824D"
+  },
+  {
+    "path": "src/app/api/admin/devices/route.ts",
+    "sha256": "CB0B375CC6C6B8823941DBE3AA8461BDCDA09BA158EEC17120D67083146ECC45"
+  },
+  {
+    "path": "src/app/api/admin/heart-rate-test/stream/route.ts",
+    "sha256": "9D705E0BE58F3F4C1C1556A0E133F533BB2D62837A80C7347B1C507963BFFD83"
+  },
+  {
+    "path": "src/app/api/admin/school-details/route.ts",
+    "sha256": "47C753BC278629F8DD1A38A25744B0D80087C82FC3D28426A51A077B2B440B3A"
+  },
+  {
+    "path": "src/app/api/admin/school-devices/[id]/route.ts",
+    "sha256": "F8F30596BA59560AF32295EF73A4230E252E404AFEE9731E8076531459C1F8F0"
+  },
+  {
+    "path": "src/app/api/admin/school-linking/route.ts",
+    "sha256": "1AD3405CEAC9CCA6597F23257119F8B00C2CAB314B3273F544B96BC42D027578"
+  },
+  {
+    "path": "src/app/api/admin/schools/[group_no]/route.ts",
+    "sha256": "B7AC2EC8B79317E1AC33EC6F8C3F065A61D0D0715571D834C798B80EF89AA4AE"
+  },
+  {
+    "path": "src/app/api/admin/schools/route.ts",
+    "sha256": "7D8FE82BBEE200610B76CF45D8B5C0C02B950CE57E63FA3EB9CA207BEFF603C6"
+  },
+  {
+    "path": "src/app/api/auth/me/route.ts",
+    "sha256": "14F1F748E3E179E3A2052D33BF0D77D8F6A69261E6B4AF41C5BBD3139A0665A3"
+  },
+  {
+    "path": "src/app/api/auth/signin/route.ts",
+    "sha256": "3AFF2579B4C7C5C0ED8C5C5D1F83540BCA0AF74A4BABF522FF596145E3B52B3F"
+  },
+  {
+    "path": "src/app/api/auth/signout/route.ts",
+    "sha256": "6027071125C2C01B707F76AAF26D98B349DD3F76A5035797DC70B51150863BE8"
+  },
+  {
+    "path": "src/app/api/device/assets/route.ts",
+    "sha256": "001751EDC52879060526744E8E57CC226BA17B69509D47181BF44119EF0114E0"
+  },
+  {
+    "path": "src/app/api/device/class-students/route.ts",
+    "sha256": "CDDE844A0BE2C9ED04A1382DF4936FB5713F5676D4C0E3D7FB39766E3468E21F"
+  },
+  {
+    "path": "src/app/api/device/ingest/route.ts",
+    "sha256": "4238765207635D7ADF073E6F7AD72B4415AB29F535157594C311FDEBFCF833C2"
+  },
+  {
+    "path": "src/app/api/device/paps-record/route.ts",
+    "sha256": "477395DAAB4E6E4DE9F93C6251152990155CD4A48D0918D495D7209983F0D0CC"
+  },
+  {
+    "path": "src/app/api/device/school-info/route.ts",
+    "sha256": "716958495F051DD1ADAD89A14E579FC055ADFA4E59B668C6D5351157040083ED"
+  },
+  {
+    "path": "src/app/api/device/school-name/route.ts",
+    "sha256": "FB3C907B0B2B5FAF803FB3F40C61783D9810227C55284CA4D611E13E01632E03"
+  },
+  {
+    "path": "src/app/api/device/settings/route.ts",
+    "sha256": "84B351DD35D2B75380A36386CE236C972891F429108717179DC97B8F780368C4"
+  },
+  {
+    "path": "src/app/api/school/contents/route.ts",
+    "sha256": "63D616BA8FA0EA9D58655AFE920F49A7247A85AADF81267CA3AE33B064CA2E7F"
+  },
+  {
+    "path": "src/app/api/school/dashboard/summary/route.ts",
+    "sha256": "73E8A38BFA45A68B0387B11184D65DA065B52B8238DCFFC5A8FFFB2CBDA7F23F"
+  },
+  {
+    "path": "src/app/api/school/device-assets/route.ts",
+    "sha256": "D32F9A2D2FF15BF365FCACCF575E0264A478A1608C99F56E0BDDF3FE2B7C47E2"
+  },
+  {
+    "path": "src/app/api/school/device-page-blocks/[id]/image/route.ts",
+    "sha256": "CCD0816C8440545CC91E384E0EF078B8D51480ECEE65ED6A6C2218AE635561B0"
+  },
+  {
+    "path": "src/app/api/school/device-page-blocks/[id]/route.ts",
+    "sha256": "5ED3CF4A86080B4A28700FA9F1751828597F84DDA66345CC541F45E596E7BE4E"
+  },
+  {
+    "path": "src/app/api/school/device-page-blocks/route.ts",
+    "sha256": "7066D5E7B476DD35DD70D754A1535E6DE45E017B159BA1160782BCE9DC450A8B"
+  },
+  {
+    "path": "src/app/api/school/device-pages/[id]/image/route.ts",
+    "sha256": "03BC6FF6C075868CCD7DBE7B4443F3BA4FCE0D45CB99DEFF9D8EF30CDDDA8019"
+  },
+  {
+    "path": "src/app/api/school/device-pages/[id]/route.ts",
+    "sha256": "B1DB1D36A917F4524CFB586A032A2FC9AC9CE1F22CD9FB395CA2AC78B4BAE064"
+  },
+  {
+    "path": "src/app/api/school/device-pages/route.ts",
+    "sha256": "2069591FA97F117963EFF45F0CACD18C879E3674B37D6A09340FD18358E0FAA1"
+  },
+  {
+    "path": "src/app/api/school/devices/route.ts",
+    "sha256": "2301EF994A6B31473AA01BDE73673D6DFC038E4801008446A6A07EBC230DFBB9"
+  },
+  {
+    "path": "src/app/api/school/exercises/route.ts",
+    "sha256": "77EBA5D45ABD20C70E0470F9CFEA44EF913E09ED5B3C88D2A81E2CE4DB27719B"
+  },
+  {
+    "path": "src/app/api/school/heart-rate-mappings/route.ts",
+    "sha256": "AADBE841863367F3E21576E48C1F0EF11758BF72765DD0709B782BCF2A2688C2"
+  },
+  {
+    "path": "src/app/api/school/heart-rate/route.ts",
+    "sha256": "3396AC6401D8A43E4F2F4877F38581FE3045A600E84CC950AFB77B3C84E85CAD"
+  },
+  {
+    "path": "src/app/api/school/heart-rate/sessions/[sessionId]/route.ts",
+    "sha256": "E2BD5A87A91FDD96FF883DC50BF4D1E6B552860907DFA58D00F6C3DE385768F2"
+  },
+  {
+    "path": "src/app/api/school/heart-rate/sessions/route.ts",
+    "sha256": "9F01DAFC736E4B10A74CE2C648D27FF7D4CD72BA862CB6085696C0628DE782EB"
+  },
+  {
+    "path": "src/app/api/school/info/route.ts",
+    "sha256": "26B9F3CF142B0C224E067984058D6D984A94ACCFEA87CA86E71B30460F1D3762"
+  },
+  {
+    "path": "src/app/api/school/paps/grade-reference/route.ts",
+    "sha256": "9EE2C2753FA7CF514665DB499FA8ED2D0A511FBCC0BA8D8EB4731E3EF3CD4364"
+  },
+  {
+    "path": "src/app/api/school/paps/route.ts",
+    "sha256": "F93EEC6372EB9C812F7FB44BC365EAF4151DEABA2D9DE9BC0CC897F6965A312C"
+  },
+  {
+    "path": "src/app/api/school/ranking/exercise/route.ts",
+    "sha256": "74FBC4C210D46A7A67260471A39F51597C800EFB1BDB220033F547B694F81326"
+  },
+  {
+    "path": "src/app/api/school/ranking/paps/route.ts",
+    "sha256": "B77F5905749351DE38D479A51F3064672C6C19EE43BC98DC5A0EAE52984C2E61"
+  },
+  {
+    "path": "src/app/api/school/school-devices/[id]/route.ts",
+    "sha256": "9CF46DEEFDEF5613485BDA9AAAF73B1A6CF5CB836C579F99DD8CDC9187D7917E"
+  },
+  {
+    "path": "src/app/api/school/school-devices/route.ts",
+    "sha256": "464A5C09A49EBA045ADA51087A934322EC7639E3CB2E88A4811B472D44E9535B"
+  },
+  {
+    "path": "src/app/api/school/students/[id]/route.ts",
+    "sha256": "DDC6DD9C7F96278B15AF4F2FD61981E7670D6507C0174DC01D5789AE059F694E"
+  },
+  {
+    "path": "src/app/api/school/students/route.ts",
+    "sha256": "B1D50716BF23DF366CF393C9DEE2096F0C97C85B7705BB198C5FD7F90F114009"
+  },
+  {
+    "path": "src/app/api/school/students/save-slot/route.ts",
+    "sha256": "70D80889E4A29261265DBA69D15270543C3DC155E3FEE50682BE6DADE2E74944"
+  },
+  {
+    "path": "src/app/favicon.ico",
+    "sha256": "66294637480BA4F1B657C0DFCEA559AD3EDFAB18934C5F166E50DB115628B615"
+  },
+  {
+    "path": "src/app/globals.css",
+    "sha256": "99E9BFB82CEA86C3C43938511B021989B6F0B056032F49931969DCD3C23E4E7C"
+  },
+  {
+    "path": "src/app/layout.tsx",
+    "sha256": "A355A519651DBE546D499042A7FC0054BF8BFF11B8AB4D043D6DC6988BB13935"
+  },
+  {
+    "path": "src/app/page.tsx",
+    "sha256": "D7374525E15D4ED40D7678A6B2D2EA3EDFCA040168183180F957CAAE8B5C0F38"
+  },
+  {
+    "path": "src/app/school/assigned-menu.ts",
+    "sha256": "A46C43A3E7A0783FA1AC9C7D5740EA5BA2348107A748E3AC73272579F1F5C73C"
+  },
+  {
+    "path": "src/app/school/dashboard/page.tsx",
+    "sha256": "41F9A55D6D2B80182B90B7AF4D4D400C25F70F61D1A639D35EF618B3F7F96C36"
+  },
+  {
+    "path": "src/app/school/device-test/page.tsx",
+    "sha256": "A8E036DA9AC43FB758603CFDC2FC5067C43532ED48BB468D8C5F84E89AA4FC1B"
+  },
+  {
+    "path": "src/app/school/exercises/page.tsx",
+    "sha256": "1F1C15D8931352EF811942288989C8594CE713F1569BD95077A6AF925DF6D92E"
+  },
+  {
+    "path": "src/app/school/heart-rate/layout.tsx",
+    "sha256": "D03619B75FFE2A0DD68D36F6FC4B20F05EE3792F01DE89D90B54A916547DEE50"
+  },
+  {
+    "path": "src/app/school/heart-rate/live/page.tsx",
+    "sha256": "8A6F2524A56E54A0B24AB394EEE2224EFD1F1C5DB18F2F77F5E84F4493080011"
+  },
+  {
+    "path": "src/app/school/heart-rate/page.tsx",
+    "sha256": "6B4C6F1F2E128C7DA6D22E3F6D7F41A71FDD919D74F45EB970DF4686A955447F"
+  },
+  {
+    "path": "src/app/school/ingest-test/page.tsx",
+    "sha256": "B6FFC37382DF3B44FD8A4F324C60D0D57320663217FDB0A6CE4B703FD912A8B2"
+  },
+  {
+    "path": "src/app/school/layout.tsx",
+    "sha256": "A15A70B1FAF65BAF5F62E9F061A3E0DFDC5A92B2E3A13296D94F64A41B81EDEB"
+  },
+  {
+    "path": "src/app/school/page.tsx",
+    "sha256": "33A6EDF2E0E2C86E7146C5C794266261525E188D4B31BF1B2324E9311FC96C7C"
+  },
+  {
+    "path": "src/app/school/paps/page.tsx",
+    "sha256": "E20F275DFC55C7AECDEB0C7751CC6D3438587C37C46FEC793A90F2C6B1E1355C"
+  },
+  {
+    "path": "src/app/school/ranking/page.tsx",
+    "sha256": "6A62B06BF0E01555B0FCA8515E37F4A34A8238ADBE9D960DAD8677942D44244B"
+  },
+  {
+    "path": "src/app/school/settings/page.tsx",
+    "sha256": "795C484340D8C28109447EBEBB6D212339F2D0E37B8BAC5BB141CA451ECD1E48"
+  },
+  {
+    "path": "src/app/school/students/page.tsx",
+    "sha256": "32FB9A8369EFB06570BC8ED0786E35650DC1B6FCAAC7C9632324439F155835CA"
+  },
+  {
+    "path": "src/components/AdminLogoutButton.tsx",
+    "sha256": "F3EAF5596F0C116A1CD9411FE50B703EC3DEFF98557554D4B932F9DE7127AE42"
+  },
+  {
+    "path": "src/components/AdminRoute.tsx",
+    "sha256": "EDD361EA8AAFFE5D52C134CF90D41CDBE62E42E8B76FE73C673A9C65106384D6"
+  },
+  {
+    "path": "src/components/BackToAdminButton.tsx",
+    "sha256": "BC0159B077F4FFC5A63FD8C8725C3699037097B5F404D0435AF196FAC018029D"
+  },
+  {
+    "path": "src/components/console/app-shell.tsx",
+    "sha256": "338646BB1BB33C7BED41DE24C5C8E4F3F65A0BA6B391DA779D88FA529898508D"
+  },
+  {
+    "path": "src/components/console/class-filter-fields.tsx",
+    "sha256": "B8898A1D1D71F3C39D7AA890D0951B348D938D2ED8923EB8B3648871707D1DA1"
+  },
+  {
+    "path": "src/components/console/feedback-provider.tsx",
+    "sha256": "935EB41921549B9BBE10E3C5587F89153129EAC717E3C4DC11537EF5421E914F"
+  },
+  {
+    "path": "src/components/console/filter-bar.tsx",
+    "sha256": "F56C6488640BC8BC5408E266B357114C9FFBC89A1088DEB6989D41DF0DFF3C2B"
+  },
+  {
+    "path": "src/components/console/page-header.tsx",
+    "sha256": "24F016F53A13788437D3D56BADC71D2F3A7E5684808A0EDAC844EC87593B8638"
+  },
+  {
+    "path": "src/components/console/school-content-icon.tsx",
+    "sha256": "B411B71EEE6B3612A140284566295021683DFCC48D09E1241937E9E622926ACF"
+  },
+  {
+    "path": "src/components/Dashboard.tsx",
+    "sha256": "FAE6261A9C54D2D0F4E701D31BA3DF6EF825C6FBCF4785A7C2C98A6232623A26"
+  },
+  {
+    "path": "src/components/dashboard/dashboard-data.ts",
+    "sha256": "95CD16DFF382C95E1F6DC9BBCF6D4B5B000127573F8DA4E4230F21851CCBD6E8"
+  },
+  {
+    "path": "src/components/dashboard/school-dashboard.tsx",
+    "sha256": "CD55656E0A6A9E593E1F8CE539A33BF815E0626C134CDFE59F724CA9900AAF37"
+  },
+  {
+    "path": "src/components/exercises/exercise-browser-qa.cjs",
+    "sha256": "9A337B0670BFFEE3D9860B3E34980BE3DA5FD96AC51CB726230E6883071A2F79"
+  },
+  {
+    "path": "src/components/exercises/exercise-charts.tsx",
+    "sha256": "756DD63BCECB50E5241716265356F4B93A337FAA31005EB70FC01A76CFC3DDFE"
+  },
+  {
+    "path": "src/components/exercises/exercise-controls.tsx",
+    "sha256": "4623BFE3DE6D7B3BF57AE7A0691C16D8942FA78AE0F35E935CD0C47BABB6AADF"
+  },
+  {
+    "path": "src/components/exercises/exercise-data.test.mjs",
+    "sha256": "8045102F45274127EC97301312B9A424F490A542767F4E51F6FD5B3EA129515D"
+  },
+  {
+    "path": "src/components/exercises/exercise-data.ts",
+    "sha256": "7902AB645AD6485D2D2F2C7CE268BA347309AF5BB44421875AAABDFCC30D5D89"
+  },
+  {
+    "path": "src/components/exercises/exercise-table.tsx",
+    "sha256": "0B959F220975F626846DACB90C445B0EDEC0B7F1AB9B1738412DC635B0B01301"
+  },
+  {
+    "path": "src/components/exercises/session-log-2026-09.md",
+    "sha256": "85E12A5B826FE43A1EDD6D1CBCD8D8C9C68456F0A5186CFA096752860ECD8483"
+  },
+  {
+    "path": "src/components/heart-rate/AnnualSparkline.tsx",
+    "sha256": "89861443E0934F64CAF07D520CD6EBF29F15EFA24766F57B157F7E7B61428649"
+  },
+  {
+    "path": "src/components/heart-rate/heart-care.module.css",
+    "sha256": "4C067D66CB0D2B7864F8FA2527F8387147306EFD0D8630D80734E6F45468EFC9"
+  },
+  {
+    "path": "src/components/heart-rate/HeartCareWorkspace.tsx",
+    "sha256": "0E60C1D5476984DEF44E194E881E0631B9F3766AA47697AA17EA408DD5B522ED"
+  },
+  {
+    "path": "src/components/heart-rate/HeartRateBatteryIcon.test.ts",
+    "sha256": "3B5B03AAFB4A441C37F85C2A4886C61E57619F1F620CABA059367DAD5AF5C3C3"
+  },
+  {
+    "path": "src/components/heart-rate/HeartRateBatteryIcon.tsx",
+    "sha256": "717D42A42CBF117BDE8F3F44A66DBCE80171F3C2F5B37B4A7D05BC6E221881FE"
+  },
+  {
+    "path": "src/components/heart-rate/HeartRateChart.tsx",
+    "sha256": "6AE32B6EAAE67ACAA1846BFE52010D023E1ECD23CA8F743D6A8D4A324F5E4FE4"
+  },
+  {
+    "path": "src/components/heart-rate/HeartRateMinuteChart.test.ts",
+    "sha256": "AA4623E400218CE0DEAE588534D22B0C06570A4D094AF7BBD81C4CEFD60FF78B"
+  },
+  {
+    "path": "src/components/heart-rate/HeartRateMinuteChart.tsx",
+    "sha256": "A2544025237FA958D560137459A383D86001F7BA4294054D8BAE3DE8064B6D42"
+  },
+  {
+    "path": "src/components/heart-rate/HeartRateMonthlyView.tsx",
+    "sha256": "C07C6B9B63EA86FB346DAA27198115FD0175D7BE8D687967AA69EB1F753330BB"
+  },
+  {
+    "path": "src/components/heart-rate/heartRateVisualization.ts",
+    "sha256": "5E934E28E7F71914D3B4D9967306C69BCE285CEDCE5512C65509CCA52045AD18"
+  },
+  {
+    "path": "src/components/heart-rate/LiveHeartCare.tsx",
+    "sha256": "B3BA59ED74A123003230EA9B99EB25E6C21D27FF9120346A81DDC5696FE9C31A"
+  },
+  {
+    "path": "src/components/heart-rate/LiveHeartRateBoard.tsx",
+    "sha256": "C2B4F85C0F892243419C337F160E170C7254AEA0B4B9AEE81A97117A9F3F5014"
+  },
+  {
+    "path": "src/components/heart-rate/SerialHeartCareView.tsx",
+    "sha256": "354085EE9841899F040386D63019AADD7475DAB8193B0584CC652BDE1C137A7A"
+  },
+  {
+    "path": "src/components/heart-rate/SessionDialogs.tsx",
+    "sha256": "5E0C722F882967C9562F52D7B4EB9E032ED8938EAF50E7D1A2B09CE4413C1D84"
+  },
+  {
+    "path": "src/components/heart-rate/StudentHeartRateViews.tsx",
+    "sha256": "7B1B82CFE332E70D3129A92CE0DD61C735094C94D06578EBA3622EEB44F5BDDE"
+  },
+  {
+    "path": "src/components/heart-rate/useHeartRateBridge.ts",
+    "sha256": "25BCDEE334EAC4C1B1F096220200FF00904938B043F7C1CF3B0ECFF8E1F5109D"
+  },
+  {
+    "path": "src/components/heart-rate/useWebSerialHeartRate.test.ts",
+    "sha256": "71AA7DE1A1BFDD5889CFD0038A3D29D97AA22B257B941C15005D5352460E3367"
+  },
+  {
+    "path": "src/components/heart-rate/useWebSerialHeartRate.ts",
+    "sha256": "F53BC9AD6E78069F14FD510B07E34DD8758970F6302D8F076EA3606C13A660C9"
+  },
+  {
+    "path": "src/components/jump-rope/JumpRopeTestBoard.tsx",
+    "sha256": "1A06C712BD02E0E4FC6AB13A95448C3EE7ED5492F7AED904389AC62B9E6BF92E"
+  },
+  {
+    "path": "src/components/jump-rope/jumpRopeUiState.test.ts",
+    "sha256": "A75E67A4AF663E02DDB18E4E260A9CE9BBD61B011C47FE5CED1C6812F791B409"
+  },
+  {
+    "path": "src/components/jump-rope/jumpRopeUiState.ts",
+    "sha256": "70961E93D5AD578CA7F6907DE954DBEE10DEEEE567A2D171E121B460F2737F00"
+  },
+  {
+    "path": "src/components/jump-rope/useWebSerialJumpRope.test.ts",
+    "sha256": "1B35AA93232D94471A1A2570A1E3B86DAF3EA0455A1E6FFD71FED3522A25EDEF"
+  },
+  {
+    "path": "src/components/jump-rope/useWebSerialJumpRope.ts",
+    "sha256": "ABF4CD7CBAD54CEB1B6E51485D833D6D9AE5FB46561F76ECCFEB0EA85775447A"
+  },
+  {
+    "path": "src/components/LoginForm.tsx",
+    "sha256": "69D5E73D99565EF63BC0D09676800D9EBCB83ADCBC1FFBE2AF0CCB96FCE3FED8"
+  },
+  {
+    "path": "src/components/paps/class-report.ts",
+    "sha256": "BCFE04082E1C13ED0F7D426865E11ABB5D6B0DBD62CA60831B07CE940B9E1ED4"
+  },
+  {
+    "path": "src/components/paps/personal-report.ts",
+    "sha256": "2309F9660B5BB63E293859F2821F6452E478C70067BA7509A3E882154C5D423C"
+  },
+  {
+    "path": "src/components/paps/report-icons.ts",
+    "sha256": "F3E15FA42B73A8FA8E4456303BD255D25D23430178699038D8507EA241055FAF"
+  },
+  {
+    "path": "src/components/ProtectedRoute.tsx",
+    "sha256": "C6F43AE9837E502B2B64FD0A15893CCFA5EA39B0DDEFB606366A48DC1DE773D9"
+  },
+  {
+    "path": "src/components/school-records/record-select.tsx",
+    "sha256": "104A8E553E835D8F2616FD019D037C4D99CFB2A8448AB50CE18A1C3EDEF983D2"
+  },
+  {
+    "path": "src/components/SchoolAnalyticsUI.tsx",
+    "sha256": "44B0C4706275A5920FCADDF6D23C0B5AFBA49A2276F4DFF115E8D2199B304E96"
+  },
+  {
+    "path": "src/components/SchoolRoute.tsx",
+    "sha256": "D3B18AD00077006C7E0F2F9484E2F415A647D6081ABCA9475E7D3A3603336A81"
+  },
+  {
+    "path": "src/components/ui/alert-dialog.tsx",
+    "sha256": "41B72A44C2E098B5590B05E1A61C9F6DF3BB82790C73993E09F4B84DA209E1B2"
+  },
+  {
+    "path": "src/components/ui/badge.tsx",
+    "sha256": "0311BB21A5DC8C1E3D70FFC35CCCC375C90E2F08BB0F0DD943DAD72C19ED45FF"
+  },
+  {
+    "path": "src/components/ui/button.tsx",
+    "sha256": "6BB2B5175A8F88EFE615EDEFC7D0B3D2220E85B756F3C57C85AED75FF53B4ED1"
+  },
+  {
+    "path": "src/components/ui/card.tsx",
+    "sha256": "39480D5B63E46554F1CFCEDAA91052C848BDA5C45D7A5DDA80FE91E7BE604FB0"
+  },
+  {
+    "path": "src/components/ui/chart.tsx",
+    "sha256": "8E605DFDCFA9C96A3A837B87D419ADE2A23BC3DB412C0B08E44AB44C7078B6E0"
+  },
+  {
+    "path": "src/components/ui/checkbox.tsx",
+    "sha256": "5331F165A96448D1C006C3417DEE18428F6E8F3416B1003976C16CAB5D83DEF6"
+  },
+  {
+    "path": "src/components/ui/dialog.tsx",
+    "sha256": "0A85C31675F8269B3B1308FFF0AB10D5CDA1A090A550A1A74A8F7F439A92EA06"
+  },
+  {
+    "path": "src/components/ui/form.tsx",
+    "sha256": "606ED13AF1F5DF78E0C86B63C2B199E39D627576442547A48D2E3DB0623B3F1F"
+  },
+  {
+    "path": "src/components/ui/input.tsx",
+    "sha256": "3BC1964C5C4ECD023B30289252B0DF0FC7B0DC8D84037AB4FEC58EA9C07E619B"
+  },
+  {
+    "path": "src/components/ui/label.tsx",
+    "sha256": "61C02D11BCB6D26893764183058CC266BF59C5679BCA8EE5E8D108AE70CB1AFA"
+  },
+  {
+    "path": "src/components/ui/native-select.tsx",
+    "sha256": "379B2130777FB0E8D0E51DD78BCB97B8B605711D3B706BA177DA4BD8CBF75CDB"
+  },
+  {
+    "path": "src/components/ui/select.tsx",
+    "sha256": "3E7A672D17FDA392DA25D6534A4AB90B6F256F624A8677EE602F171781F1D0FC"
+  },
+  {
+    "path": "src/components/ui/skeleton.tsx",
+    "sha256": "8110BBA70D0CB9FE968C0B7BD092AD12258CAEF40B028B4A87F402BDAB907FAF"
+  },
+  {
+    "path": "src/components/ui/sonner.tsx",
+    "sha256": "13CCC9B0FE4248E622F83A1D3B2F0566B72B5E04162D7D0C8DB8945ECC71B55F"
+  },
+  {
+    "path": "src/components/ui/table.tsx",
+    "sha256": "2E32CE91C37EFB55ECBB66DF85497171006BA4F0CE7DBE77DCF7001BF4493BE9"
+  },
+  {
+    "path": "src/components/ui/textarea.tsx",
+    "sha256": "049A9C5D55B9D120EDAAA747EF434F9339575DBCDFFE6C236BD897D6C54034F7"
+  },
+  {
+    "path": "src/components/ui/toggle-group.tsx",
+    "sha256": "343107D9DE0F2F76BAB9D43FC3AAE0AEB7B7A6646FC12EA540BB01AC43BA64AE"
+  },
+  {
+    "path": "src/components/ui/toggle.tsx",
+    "sha256": "514CACD31A4333D98F8845EA0F8448EC9F145A3C777B3DE2BAEF8D196878C829"
+  },
+  {
+    "path": "src/components/ui/tooltip.tsx",
+    "sha256": "345BC589A285ECE3622BF18F4C842107836CF6FC8A9055B0A604DB0CF6C83551"
+  },
+  {
+    "path": "src/contexts/AuthContext.tsx",
+    "sha256": "C38C41949F54412D111088EA9CF44A154069C64A0DF7FFBDCA832F9B970CC7DB"
+  },
+  {
+    "path": "src/lib/analytics.test.ts",
+    "sha256": "4E0C05334CAAD0A3C2E4CD2C242FFD65FD5A0ADF72EB9BB882CA713C71BC52B4"
+  },
+  {
+    "path": "src/lib/analytics.ts",
+    "sha256": "9E820B90A131628DB20B2B5A3B1D60008B4862E3B56DBA4E276C374836C2601C"
+  },
+  {
+    "path": "src/lib/apiAuth.ts",
+    "sha256": "553CA0884BB288B49EEAA2D5D9361D7D3EB53DB0C2335DE507886DF1A0CDE4C3"
+  },
+  {
+    "path": "src/lib/deviceApiAccess.test.ts",
+    "sha256": "62959D62C473E35CFCC4FB79479C6CEB9A70DD480333865DEF8D80CBDD26B68B"
+  },
+  {
+    "path": "src/lib/deviceApiAccess.ts",
+    "sha256": "923357979CAE5ADCFFB5EC73A992F76A995F7071966F72E0861F5B7D008ADFE2"
+  },
+  {
+    "path": "src/lib/healthCareExercise.test.ts",
+    "sha256": "5AC0D3182CC09FD7649713609FAC4F6F86FC5928AD94C141501A6E441DFD2160"
+  },
+  {
+    "path": "src/lib/healthCareExercise.ts",
+    "sha256": "50E4846ABC670E16BBAD7752B602114E21FB48162D8A60718F1B43FEDF5B2FFE"
+  },
+  {
+    "path": "src/lib/heart-rate/bridge.ts",
+    "sha256": "CF37C2E84EF288EF3FEC0B7CF9AEA53F017497707795DFBB8F8AE8F87A0ED8B5"
+  },
+  {
+    "path": "src/lib/heart-rate/chart.ts",
+    "sha256": "BBACD1BB91F157E7006C9DC9914B6502E3368F9A0A67B0472F5E733DFF80E090"
+  },
+  {
+    "path": "src/lib/heart-rate/monthly-preservation.test.ts",
+    "sha256": "531951B96379BAA0522281FA06531288B1ACBB2837BAB3C0AFB37B26E3326927"
+  },
+  {
+    "path": "src/lib/heart-rate/monthly.ts",
+    "sha256": "144D59225D1FA092A7CD637BC9B5C7D1172F4AD62D71168D35DEA564BDD9AD76"
+  },
+  {
+    "path": "src/lib/heart-rate/serial-display.test.ts",
+    "sha256": "AED73FE0A420D3D5D5067D5B2DDFED9C6B33B4EA754AA3535A4E5D43B1F216C2"
+  },
+  {
+    "path": "src/lib/heart-rate/serial-display.ts",
+    "sha256": "7BE971EB60FC69F6BE111304DB88C6DE3D3DD0226670A2F3E6D5551C5F24C47F"
+  },
+  {
+    "path": "src/lib/heart-rate/session-log-2026-09.md",
+    "sha256": "EFB01A3AA01C7134AF0F21590890296B0D283C1F713B223F80E7EAA97C75E3D3"
+  },
+  {
+    "path": "src/lib/heart-rate/session.ts",
+    "sha256": "C6FE8AB7BBD12733A3DC0A96708D8F30D9DA156996EAE1571EB1C0D6196B27B8"
+  },
+  {
+    "path": "src/lib/heart-rate/zones.ts",
+    "sha256": "2A7DFE94605CA3CF956592AF7EC030B1BCEB6BBD5B39B4A10A683A1019814FBD"
+  },
+  {
+    "path": "src/lib/heartRateCollector.test.ts",
+    "sha256": "67ACAC263A7836EA5E59C6231F6C2A193595204C4060749293B6BEDB75D06BB5"
+  },
+  {
+    "path": "src/lib/heartRateCollector.ts",
+    "sha256": "D5CFFF8F5FCC9CF0E5A49B2D7335739CDFCED84C4CA501C680A73C480E1CAD01"
+  },
+  {
+    "path": "src/lib/heartRateFullscreen.test.ts",
+    "sha256": "EAB67FF33387371FB6C02FF5657C71B0E637C32B2556CF97C910D2C2FFFA9488"
+  },
+  {
+    "path": "src/lib/heartRateFullscreen.ts",
+    "sha256": "5A0CE0CD6885A81BB40E5DBEECA4B3CEA7E696E4691A1702202348FB77080DD6"
+  },
+  {
+    "path": "src/lib/heartRateMapping.test.ts",
+    "sha256": "1BFAE538792CB662E19579F90110D801E17585DDDC76DB8571BA616330ED3730"
+  },
+  {
+    "path": "src/lib/heartRateMapping.ts",
+    "sha256": "89122B68C9FA7315829C55BF51BF728F04D6DA35A6CBAB25EB54AF18954F5324"
+  },
+  {
+    "path": "src/lib/heartRateRecordValidation.test.ts",
+    "sha256": "8CE6EE5B274DCE01B8C502529B27C39D920A8EB70D10CBC5D70C735458FA2DF8"
+  },
+  {
+    "path": "src/lib/heartRateRecordValidation.ts",
+    "sha256": "2285B0C101E7004405AA4D931C435319523DB551B954DBB0A73F66A5175CE14B"
+  },
+  {
+    "path": "src/lib/heartRateSerial.test.ts",
+    "sha256": "5A001F304847DB5A11F5F6411351E4E081A8EF07C175E7540FDDF374DFD802EF"
+  },
+  {
+    "path": "src/lib/heartRateSerial.ts",
+    "sha256": "6EED20338EED90B1D09F4A0612672C40EAAFF54CAE84F0AD22A09C7113F16464"
+  },
+  {
+    "path": "src/lib/heartRateSession.test.ts",
+    "sha256": "5EEDBD923A20848239340E69B370D362FF85EA7E80A7C355B4ABA7DB4464E122"
+  },
+  {
+    "path": "src/lib/heartRateSession.ts",
+    "sha256": "019A05ED540ECB91791BDCD5DB61A93E84427468A6F272F09552CA9DCC7EBE34"
+  },
+  {
+    "path": "src/lib/heartRateSessionApi.ts",
+    "sha256": "950A6E71F8DFEABDD267BA909425F64604FDDEF9C3DA2C1801AB47179A0E7857"
+  },
+  {
+    "path": "src/lib/heartRateSessionClient.test.ts",
+    "sha256": "2CA3F21CA61B12D5262B3F248274F04EA65FE2C239041D91DE7D1449831DEF9C"
+  },
+  {
+    "path": "src/lib/heartRateSessionClient.ts",
+    "sha256": "EC3799C9D7EFE8B236C4A67CEFE1B971A4EC85230675E7DB79BBF92C95FFEA96"
+  },
+  {
+    "path": "src/lib/hub-parser.ts",
+    "sha256": "EA988BDB532092D3181FB79EF10197E6128071E27CE0300040C2C2E7EB77C7B3"
+  },
+  {
+    "path": "src/lib/jumpRopeSerial.test.ts",
+    "sha256": "8ABA3D236FDF6262A3C0491F13FC76AA4F8C5331CF0CBCD7F96D3C83982878B0"
+  },
+  {
+    "path": "src/lib/jumpRopeSerial.ts",
+    "sha256": "B7E241D4A5264F5A23B35632EFA60D7488DEC3CF62CE510EDF4F8F77DF4EB910"
+  },
+  {
+    "path": "src/lib/operationGeneration.test.ts",
+    "sha256": "45C0E830D529F6778FE6DCB3048FB4E2BBFED2BB2E52E2061E65585C86D4FD25"
+  },
+  {
+    "path": "src/lib/operationGeneration.ts",
+    "sha256": "4BD404A04BE7E0AC9CDFBF0BFB2DACBCE7D6E366C15FF5A2E19312CE3F12AACE"
+  },
+  {
+    "path": "src/lib/ownedResource.test.ts",
+    "sha256": "ED68D50DF812FA0E00067BE5786293B44DE2B4474343F6ACCB8A0FC94D428CDF"
+  },
+  {
+    "path": "src/lib/ownedResource.ts",
+    "sha256": "1A57920B2C03EA483A8458DD1F9E4AF1EC2DA62F60A99D671F8A7FD6E8531243"
+  },
+  {
+    "path": "src/lib/schoolApiAuth.ts",
+    "sha256": "632FE1CDB2033FF8ACB904FA6625F312F9DC1500EF28122B3D1F0FA4706DFA7C"
+  },
+  {
+    "path": "src/lib/signinAccess.test.ts",
+    "sha256": "43E5C05503D7826E3DB36C7A3A14567C65824D75E9616070D1CD157F7930527E"
+  },
+  {
+    "path": "src/lib/signinAccess.ts",
+    "sha256": "0F26D540D26841DA3B840B6830D2EDB3CABA0B8050458C3426CC17A2210084E8"
+  },
+  {
+    "path": "src/lib/supabase.ts",
+    "sha256": "90D0FE82C77F623ED2B0913AF6DF4C176275EA1E112D0AC14CBBF5ED33A37F37"
+  },
+  {
+    "path": "src/lib/utils.ts",
+    "sha256": "D3753F708B15CC1EC47BC3136827134B702E2069EEBDB0DDEFB1806B95D7C1D9"
+  },
+  {
+    "path": "src/middleware.test.ts",
+    "sha256": "19F4CD439F79F1C733600C3C2FC4317F779ECD95E6F70F2B62210A5BB1C42D57"
+  },
+  {
+    "path": "src/middleware.ts",
+    "sha256": "830ED0C94E9E1AAF9A8963885820D354D9BE4F5DD4A0C5907306EFD6F76A95E2"
+  },
+  {
+    "path": "src/types/database.types.ts",
+    "sha256": "77F100225102FCC298C69265F3A7A2545F896849A15CF36BDE68948D8D7E8129"
+  },
+  {
+    "path": "src/types/supabaseHelpers.ts",
+    "sha256": "3C086E3476652711ED263219770689B11460BC7F9CA67EB64326F4C49B8AFB22"
+  },
+  {
+    "path": "supabase/.temp/cli-latest",
+    "sha256": "777FD6D651101226CF5D67775D803518C5E94912772C3F936A458353B58EC9D1"
+  },
+  {
+    "path": "supabase/config.toml",
+    "sha256": "7C4F4CEA57D09EBF7CF93EF33077A40B6A11F91CFF93F43658F807654BC31009"
+  },
+  {
+    "path": "supabase/migrations/20260820000100_heart_rate_sessions.sql",
+    "sha256": "976A8541847D2377DEA52B81F0CDE99C8E776DF721A6B434132A085BBB7E1E10"
+  },
+  {
+    "path": "supabase/migrations/20260820000200_heart_rate_session_academic_year_projection.sql",
+    "sha256": "F49EEB0D628668364934CE7BBF9D62B135C2E1E9135FEE93BFC77D76DA5E5349"
+  },
+  {
+    "path": "supabase/migrations/20260820000300_heart_rate_session_state_guards.sql",
+    "sha256": "9A8E351A5E34B415D99A9C24EA80FDC0F75CFD7622A069FAFD890CD2D8729FDF"
+  },
+  {
+    "path": "tsconfig.json",
+    "sha256": "F350BEB925C0450AEA452419588897C60160BE6172E9212B78F163C07AA281D1"
+  },
+  {
+    "path": "vercel.json",
+    "sha256": "1E50C2FE60ECC6447B17A8D938E2DC819F07AFAD71722D58986A2F15D91FAFCB"
+  }
+]

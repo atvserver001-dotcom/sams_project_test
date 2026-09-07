@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "paths": { "@/*": ["./src/*"] },
+    "tsBuildInfoFile": ".next-chart-lab/tsconfig.tsbuildinfo"
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next-chart-lab/types/**/*.ts"],
+  "exclude": ["../../node_modules"]
+}
